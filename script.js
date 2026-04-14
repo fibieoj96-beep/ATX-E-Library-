@@ -60,12 +60,12 @@ const translations = {
         // --- TAMBAHAN UNTUK FIX BLANK INPUTS ---
         choose_room: "Pilih Bilik",
         reading_room: "Bilik Bacaan",
-        discussion_room: "Bilik Diskusi",
+        discussion_room: "Bilik Perbincangan",
         comp_zone: "Zon Komputer",
         booking_date: "Tarikh Tempahan",
         start_time: "Masa Mula",
         end_time: "Masa Tamat",
-		hi : "Hai"
+			Hi: "Hai"
     },
     en: {
         login_title: "LOGIN",
@@ -120,7 +120,7 @@ const translations = {
         booking_date: "Booking Date",
         start_time: "Start Time",
         end_time: "End Time",
-		hi: "Hi"
+			Hi: "Hai"
     }
 };
 
@@ -138,7 +138,10 @@ function renderData() {
     
     document.getElementById('welcome').innerText = (t.welcome_prefix || "Hai, ") + session.name;
 
+    // --- BAHAGIAN KEMASKINI PROFIL (FIX TELEFON & TEKS) ---
     const userDB = users.find(u => u.matrik === session.matrik);
+    
+    // 1. Gambar Profil
     const profDisplay = document.getElementById('profile-display');
     if(profDisplay) {
         profDisplay.innerHTML = (userDB && userDB.photo) 
@@ -146,71 +149,84 @@ function renderData() {
             : `<div style="width:100%; height:100%; background:#eee; border-radius:50%; border:1px solid #ddd;"></div>`;
     }
 
-    if (session.role === 'user') {
-                const myAll = bookings.filter(b => b.matrik === session.matrik);
+    // 2. Teks Profil (Nama, Matrik, Telefon)
+    const pName = document.getElementById('prof-name');
+    const pMatrik = document.getElementById('prof-matrik');
+    const pPhone = document.getElementById('prof-phone');
 
-const active = myAll.filter(b => 
-    b.status === 'pending' || 
-    b.status === 'approved' || 
-    b.status === 'active'
-).sort((a, b) => b.id - a.id);
-
-const history = myAll.filter(b => 
-    b.status === 'rejected' || 
-    b.status === 'ended'
-).sort((a, b) => b.id - a.id);
-
-document.getElementById('countMy').innerText = active.length;
-
-document.getElementById('myList').innerHTML = active.map(b => {
-    let actionButton = '';
-    let statusColor = '#ffc107'; 
-    let statusLabel = '';
-
-    if (b.status === 'approved') {
-        actionButton = `<button onclick="showQR('${b.id}')" style="background:#28a745; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:11px; font-weight:800;">CHECK-IN QR</button>`;
-        statusColor = '#28a745'; 
-        statusLabel = `<span class="status-badge badge-green" style="margin-top:5px;">APPROVED</span>`;
-    } else if (b.status === 'active') {
-        actionButton = `<button onclick="showQR('${b.id}')" style="background:var(--primary); color:white; border:none; padding:8px 12px; border-radius:8px; font-size:11px; font-weight:800;">CHECK-OUT QR</button>`;
-        statusColor = '#28a745';
-        statusLabel = `<span class="status-badge badge-green" style="margin-top:5px;">IN-USE</span>`;
-    } else {
-        actionButton = `<button onclick="deleteBooking('${b.id}')" style="color:#dc3545; border:1.5px solid #dc3545; background:none; padding:5px 10px; border-radius:8px; font-weight:bold; font-size:10px;">CANCEL</button>`;
-        statusLabel = `<span style="font-size:10px; color:#64748b; font-weight:bold;">WAITING APPROVAL</span>`;
-    }
-
-    return `
-    <div class="card" style="border-left: 6px solid ${statusColor}; margin-bottom:12px; padding:15px; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-            <strong style="color:var(--primary); font-size:15px; display:block; margin-bottom:2px;">${b.type}</strong>
-            <small style="color:var(--accent); font-weight:bold; display:block;">Tarikh: ${b.date}</small>
-            <small style="opacity:0.7; display:block;">Masa: ${b.start} - ${b.end}</small>
-            ${statusLabel}
-        </div>
-        ${actionButton}
-    </div>`;
-}).join('') || `<p style="text-align:center; opacity:0.6; padding:20px;">Tiada tempahan aktif.</p>`;
-
-document.getElementById('history-list').innerHTML = history.map(b => {
-    const isEnded = (b.status === 'ended');
-    const sClass = isEnded ? 'badge-red' : 'badge-red'; 
-    const sLabel = b.status.toUpperCase();
+    if (pName) pName.innerText = session.name || "-";
+    if (pMatrik) pMatrik.innerText = session.matrik || "-";
     
-    return `
-    <div style="padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-            <strong style="color:var(--primary); font-size:14px;">${b.type}</strong><br>
-            <small style="opacity:0.7; display:block; margin-top:4px;">Tarikh: ${b.date}</small>
-            <small style="opacity:0.8; font-weight:bold;">Masa: ${b.start} - ${b.end}</small>
-        </div>
-        <div class="status-badge ${sClass}">${sLabel}</div>
-    </div>`;
-}).join('') || '<p style="text-align:center; padding:20px;">Tiada sejarah.</p>';
+    // Ambil data phone dari userDB (database) atau session
+    if (pPhone) {
+        pPhone.innerText = (userDB && userDB.phone) ? userDB.phone : (session.phone || "-");
+    }
+    // -------------------------------------------------------
 
-      
+    if (session.role === 'user') {
+        const myAll = bookings.filter(b => b.matrik === session.matrik);
+
+        const active = myAll.filter(b => 
+            b.status === 'pending' || 
+            b.status === 'approved' || 
+            b.status === 'active'
+        ).sort((a, b) => b.id - a.id);
+
+        const history = myAll.filter(b => 
+            b.status === 'rejected' || 
+            b.status === 'ended'
+        ).sort((a, b) => b.id - a.id);
+
+        document.getElementById('countMy').innerText = active.length;
+
+        document.getElementById('myList').innerHTML = active.map(b => {
+            let actionButton = '';
+            let statusColor = '#ffc107'; 
+            let statusLabel = '';
+
+            if (b.status === 'approved') {
+                actionButton = `<button onclick="showQR('${b.id}')" style="background:#28a745; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:11px; font-weight:800;">CHECK-IN QR</button>`;
+                statusColor = '#28a745'; 
+                statusLabel = `<span class="status-badge badge-green" style="margin-top:5px;">APPROVED</span>`;
+            } else if (b.status === 'active') {
+                actionButton = `<button onclick="showQR('${b.id}')" style="background:var(--primary); color:white; border:none; padding:8px 12px; border-radius:8px; font-size:11px; font-weight:800;">CHECK-OUT QR</button>`;
+                statusColor = '#28a745';
+                statusLabel = `<span class="status-badge badge-green" style="margin-top:5px;">IN-USE</span>`;
+            } else {
+                actionButton = `<button onclick="deleteBooking('${b.id}')" style="color:#dc3545; border:1.5px solid #dc3545; background:none; padding:5px 10px; border-radius:8px; font-weight:bold; font-size:10px;">CANCEL</button>`;
+                statusLabel = `<span style="font-size:10px; color:#64748b; font-weight:bold;">WAITING APPROVAL</span>`;
+            }
+
+            return `
+            <div class="card" style="border-left: 6px solid ${statusColor}; margin-bottom:12px; padding:15px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong style="color:var(--primary); font-size:15px; display:block; margin-bottom:2px;">${b.type}</strong>
+                    <small style="color:var(--accent); font-weight:bold; display:block;">Tarikh: ${b.date}</small>
+                    <small style="opacity:0.7; display:block;">Masa: ${b.start} - ${b.end}</small>
+                    ${statusLabel}
+                </div>
+                ${actionButton}
+            </div>`;
+        }).join('') || `<p style="text-align:center; opacity:0.6; padding:20px;">Tiada tempahan aktif.</p>`;
+
+        document.getElementById('history-list').innerHTML = history.map(b => {
+            const isEnded = (b.status === 'ended');
+            const sClass = isEnded ? 'badge-red' : 'badge-red'; 
+            const sLabel = b.status.toUpperCase();
+            
+            return `
+            <div style="padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong style="color:var(--primary); font-size:14px;">${b.type}</strong><br>
+                    <small style="opacity:0.7; display:block; margin-top:4px;">Tarikh: ${b.date}</small>
+                    <small style="opacity:0.8; font-weight:bold;">Masa: ${b.start} - ${b.end}</small>
+                </div>
+                <div class="status-badge ${sClass}">${sLabel}</div>
+            </div>`;
+        }).join('') || '<p style="text-align:center; padding:20px;">Tiada sejarah.</p>';
+
     } else {
-                let needsSaving = false;
+        let needsSaving = false;
         bookings.forEach(b => {
             if (b.status === 'approved' && b.date === today && curT >= b.end) {
                 b.status = 'ended';
@@ -226,14 +242,14 @@ document.getElementById('history-list').innerHTML = history.map(b => {
                 let roomMatch = false;
                 const type = b.type.toLowerCase();
                 if (zone === "Reading Room" && (type.includes("reading") || type.includes("bacaan"))) roomMatch = true;
-                if (zone === "Discussion Room" && (type.includes("discussion") || type.includes("diskusi"))) roomMatch = true;
+                if (zone === "Discussion Room" && (type.includes("discussion") || type.includes("perbincangan"))) roomMatch = true;
                 if (zone === "Computer Zone" || zone === "Computer Lab") {
                     if (type.includes("computer") || type.includes("komputer") || type.includes("zon")) roomMatch = true;
                 }
                 return isApprovedToday && isOngoing && roomMatch;
             }).length;
 
-            let elId = (zone === "Reading Room") ? "stat-bacaan" : (zone === "Discussion Room") ? "stat-diskusi" : "stat-komputer";
+            let elId = (zone === "Reading Room") ? "stat-bacaan" : (zone === "Discussion Room") ? "stat-perbincangan" : "stat-komputer";
             const el = document.getElementById(elId);
             if (el) {
                 const baki = LIMITS[zone] - occupied;
@@ -301,7 +317,7 @@ document.getElementById('history-list').innerHTML = history.map(b => {
                 </div>`;
             }).join('') || '<p style="text-align:center; padding:30px; opacity:0.5;">Tiada rekod.</p>';
         }
-	 }
+    }
 }
 // ==========================================
 // 3. AUTH & 13. CONTAINER AUTO-EXPAND
@@ -440,17 +456,21 @@ function sendWhatsAppReset() {
     const phone = document.getElementById('forgotPhone').value.trim();
     const user = users.find(u => u.phone === phone);
     
-    if (!user) return alert("Nombor telefon tidak terdaftar!");
+    if (!user) {
+        alert("Nombor telefon tidak terdaftar!");
+        return;
+    }
 
     const newPass = Math.floor(100000 + Math.random() * 900000).toString();
     user.pass = newPass; 
     saveToLocal();
 
-    const msg = `Hai ${user.name}, kata laluan sementara E-Library ATX anda: ${newPass}. Sila log masuk dan tukar segera.`;
-    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`, '_blank');
+    const msg = "Hai " + user.name + ", kata laluan sementara E-Library ATX anda: " + newPass + ". Sila log masuk dan tukar segera.";
+    window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(msg), '_blank');
     
-    toggleForgot(); // Balik ke skrin login
+    showAuthForm('login');
 }
+
 
 // ==========================================
 // 4. SCANNER, QR, CHECK-IN/OUT
