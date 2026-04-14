@@ -1,6 +1,10 @@
 // ==========================================
 // 1. CONFIGURATION & DATA INITIALIZATION
 // ==========================================
+const SB_URL = "https://eurpvtwlzvwvkegyekwf.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1cnB2dHdsenZ3dmtlZ3lla3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzQ4ODgsImV4cCI6MjA5MTc1MDg4OH0.qyPxQM5k4OB5TbrLAA1qQUfrChog8QQ_uhIw-6b5NEg";
+const sb = createClient(SB_URL, SB_KEY);
+
 const MASTER_KEY = "ATX_ADMIN_2026";
 const LIMITS = { "Reading Room": 5, "Discussion Room": 2, "Computer Zone": 10 };
 
@@ -322,67 +326,70 @@ function renderData() {
 // ==========================================
 // 3. AUTH & 13. CONTAINER AUTO-EXPAND
 // ==========================================
-function handleLogin() {
-    const u = document.getElementById('logUser').value.trim(), 
-          p = document.getElementById('logPass').value;
+async function handleLogin() {
+    const u = document.getElementById('logUser').value.trim();
+    const p = document.getElementById('logPass').value;
 
-    // 1. KOD LAMA BOS (Pintu Belakang Admin)
     if (u === "admin" && p === "123") {
-        session = { name: "Administrator", matrik: "ADM-001", role: "admin", photo: null };
-    } 
-    else {
-        // 2. KOD LAMA BOS (Cari user dalam database)
-        const f = users.find(x => x.matrik === u && x.pass === p);
-        if (f) {
-            session = JSON.parse(JSON.stringify(f)); // Deep copy gaya bos
-        } else {
-            return alert("No Matrik atau Password Salah!");
-        }
+        session = { name: "Administrator", matrik: "ADM-001", role: "admin", phone: "60123456789" };
+        loginSuccess();
+        return;
     }
 
-    // 3. TRANSISI UI (Kekal kod asal bos)
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('matrik', u)
+        .single();
+
+    if (data && data.pass === p) {
+        session = data;
+        loginSuccess();
+    } else {
+        alert("ID atau Password Salah!");
+    }
+}
+
+function loginSuccess() {
+    localStorage.setItem('atx_session', JSON.stringify(session));
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app-content').style.display = 'flex';
     document.getElementById('admin-view').style.display = (session.role === 'admin' ? 'block' : 'none');
     document.getElementById('student-view').style.display = (session.role === 'user' ? 'block' : 'none');
-    
-    renderData(); 
-    showPage('dashboard');
+    renderData();
 }
 
-function handleSignup() {
-    // Ambil input (Termasuk regPhone baru)
-    const n = document.getElementById('regName').value.trim(),
-          m = document.getElementById('regMatrik').value.trim(),
-          p = document.getElementById('regPass').value,
-          r = document.getElementById('regRole').value,
-          s = document.getElementById('regSecret').value,
-          ph = document.getElementById('regPhone').value.trim();
+async function handleSignup() {
+    const n = document.getElementById('regName').value.trim();
+    const m = document.getElementById('regMatrik').value.trim();
+    const p = document.getElementById('regPass').value;
+    const r = document.getElementById('regRole').value;
+    const s = document.getElementById('regSecret').value;
+    const ph = document.getElementById('regPhone').value.trim();
 
-    // 1. VALIDASI (Kekal kod lama bos)
-    if (!n || !p) return alert("Sila isi Nama & Password!");
-    if (r === 'admin' && s !== MASTER_KEY) return alert("Master Key Salah!");
-    
-    // 2. LOGIK AUTO-ID (Penambahbaikan dari kod asal bos)
-    const prefix = (r === 'admin' ? "ADM-" : "STU-");
-    const autoID = prefix + Date.now().toString().slice(-4);
-    const finalID = m || autoID; // Pakai m kalau ada, kalau kosong pakai autoID
+    if (!n || !p || !ph) return alert("Sila isi maklumat wajib!");
+    if (r === 'admin' && s !== "1234") return alert("Master Key Salah!");
 
-    // 3. SIMPAN DATA (Kekal struktur asal bos + phone & photo)
-    users.push({ 
-        name: n, 
-        matrik: finalID, 
-        pass: p, 
-        role: r, 
-        phone: ph, 
-        photo: null 
-    });
+    const autoID = (r === 'admin' ? "ADM-" : "STU-") + Date.now().toString().slice(-4);
+    const finalID = m || autoID;
 
-    saveToLocal(); 
-    alert("Pendaftaran Berjaya! ID Login: " + finalID); 
-    toggleAuth();
+    const { error } = await supabase
+        .from('users')
+        .insert([{ 
+            matrik: finalID, 
+            name: n, 
+            pass: p, 
+            role: r, 
+            phone: ph 
+        }]);
+
+    if (error) {
+        alert("Gagal Daftar: " + error.message);
+    } else {
+        alert("Pendaftaran Cloud Berjaya! ID: " + finalID);
+        showAuthForm('login');
+    }
 }
-
 
 
 function checkRole() {
