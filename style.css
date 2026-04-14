@@ -119,20 +119,22 @@ body.dark-mode .lang-switcher-login span { color: #ffffff; }
     border-radius: 30px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.3);
     margin: auto;
+    max-height: 85vh;            
+overflow-y: auto;           
+    -webkit-overflow-scrolling: touch;
+    
+    display: flex;
+    flex-direction: column;
     transition: 0.3s ease-in-out;
 }
 
-body.dark-mode .auth-container {
-    background: #1e293b;
-}
-
 .form-container {
-    padding: 35px 25px 25px 25px;
-    display: none; /* Sembunyi secara default */
-    flex-direction: column;
-    gap: 15px;
+    padding: 35px 25px 40px 25px !important; 
 }
 
+.auth-container::-webkit-scrollbar {
+    display: none;
+}
 
 .form-container h2 {
     margin-top: 25px; 
