@@ -338,67 +338,29 @@ function renderData() {
 // 3. AUTH & 13. CONTAINER AUTO-EXPAND
 // ==========================================
 function handleLogin() {
-    const u = document.getElementById('logUser').value.trim(), 
-          p = document.getElementById('logPass').value;
-
-    // 1. KOD LAMA BOS (Pintu Belakang Admin)
-    if (u === "admin" && p === "123") {
-        session = { name: "Administrator", matrik: "ADM-001", role: "admin", photo: null };
-    } 
+    const u = document.getElementById('logUser').value.trim(), p = document.getElementById('logPass').value;
+    if (u === "admin" && p === "123") session = { name: "Administrator", matrik: "ADM", role: "admin" };
     else {
-        // 2. KOD LAMA BOS (Cari user dalam database)
         const f = users.find(x => x.matrik === u && x.pass === p);
-        if (f) {
-            session = JSON.parse(JSON.stringify(f)); // Deep copy gaya bos
-        } else {
-            return alert("No Matrik atau Password Salah!");
-        }
+        if (f) session = JSON.parse(JSON.stringify(f)); 
+        else return alert("No Matrik atau Password Salah!");
     }
-
-    // 3. TRANSISI UI (Kekal kod asal bos)
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app-content').style.display = 'flex';
     document.getElementById('admin-view').style.display = (session.role === 'admin' ? 'block' : 'none');
     document.getElementById('student-view').style.display = (session.role === 'user' ? 'block' : 'none');
-    
-    renderData(); 
-    showPage('dashboard');
+    renderData(); showPage('dashboard');
 }
 
 function handleSignup() {
-    // Ambil input (Termasuk regPhone baru)
-    const n = document.getElementById('regName').value.trim(),
-          m = document.getElementById('regMatrik').value.trim(),
-          p = document.getElementById('regPass').value,
-          r = document.getElementById('regRole').value,
-          s = document.getElementById('regSecret').value,
-          ph = document.getElementById('regPhone').value.trim();
-
-    // 1. VALIDASI (Kekal kod lama bos)
+    const n = document.getElementById('regName').value, m = document.getElementById('regMatrik').value,
+          p = document.getElementById('regPass').value, r = document.getElementById('regRole').value,
+          s = document.getElementById('regSecret').value;
     if (!n || !p) return alert("Sila isi Nama & Password!");
     if (r === 'admin' && s !== MASTER_KEY) return alert("Master Key Salah!");
-    
-    // 2. LOGIK AUTO-ID (Penambahbaikan dari kod asal bos)
-    const prefix = (r === 'admin' ? "ADM-" : "STU-");
-    const autoID = prefix + Date.now().toString().slice(-4);
-    const finalID = m || autoID; // Pakai m kalau ada, kalau kosong pakai autoID
-
-    // 3. SIMPAN DATA (Kekal struktur asal bos + phone & photo)
-    users.push({ 
-        name: n, 
-        matrik: finalID, 
-        pass: p, 
-        role: r, 
-        phone: ph, 
-        photo: null 
-    });
-
-    saveToLocal(); 
-    alert("Pendaftaran Berjaya! ID Login: " + finalID); 
-    toggleAuth();
+    users.push({ name: n, matrik: m || "ADM-"+Date.now().toString().slice(-4), pass: p, role: r, photo: null });
+    saveToLocal(); alert("Pendaftaran Berjaya!"); toggleAuth();
 }
-
-
 
 function checkRole() {
     const r = document.getElementById('regRole').value;
@@ -409,58 +371,9 @@ function checkRole() {
 
 function toggleAuth() { 
     const box = document.getElementById('authBox');
-    const loginForm = document.querySelector('.login-form');
-    const signupForm = document.querySelector('.signup-form');
-    const forgotForm = document.querySelector('.forgot-form');
-
     box.classList.toggle('active');
-
-    // 13. Auto-Expand Container height (Logic asal bos)
-    if (box.classList.contains('active')) {
-        box.style.maxHeight = "850px"; // Kasi tinggi sikit sbb signup banyak field
-        signupForm.style.display = 'flex';
-        loginForm.style.display = 'none';
-        forgotForm.style.display = 'none';
-    } else {
-        box.style.maxHeight = "500px";
-        signupForm.style.display = 'none';
-        loginForm.style.display = 'flex';
-        forgotForm.style.display = 'none';
-    }
-}
-
-// Tambahan: Fungsi untuk switch ke page Lupa Password (WhatsApp)
-function toggleForgot() {
-    const loginForm = document.querySelector('.login-form');
-    const forgotForm = document.querySelector('.forgot-form');
-    const signupForm = document.querySelector('.signup-form');
-
-    signupForm.style.display = 'none';
-    
-    if (forgotForm.style.display === 'flex') {
-        forgotForm.style.display = 'none';
-        loginForm.style.display = 'flex';
-    } else {
-        loginForm.style.display = 'none';
-        forgotForm.style.display = 'flex';
-    }
-}
-
-// Tambahan: Fungsi hantar kod reset ke WhatsApp
-function sendWhatsAppReset() {
-    const phone = document.getElementById('forgotPhone').value.trim();
-    const user = users.find(u => u.phone === phone);
-    
-    if (!user) return alert("Nombor telefon tidak terdaftar!");
-
-    const newPass = Math.floor(100000 + Math.random() * 900000).toString();
-    user.pass = newPass; 
-    saveToLocal();
-
-    const msg = `Hai ${user.name}, kata laluan sementara E-Library ATX anda: ${newPass}. Sila log masuk dan tukar segera.`;
-    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`, '_blank');
-    
-    toggleForgot(); // Balik ke skrin login
+    // 13. Auto-Expand Container height
+    box.style.maxHeight = box.classList.contains('active') ? "750px" : "480px";
 }
 
 // ==========================================
@@ -592,74 +505,35 @@ function toggleAdminLiveHistory() {
 // 7. NAVIGATION & INIT
 // ==========================================
 function showPage(p) {
-    // 1. Sorok semua page, tunjuk page yang dipilih
     document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
     const target = document.getElementById('page-' + p);
-    if(target) {
-        target.classList.add('active-page');
-    } else {
-        console.error("Page tidak dijumpai: page-" + p);
-    }
-
-    // 2. Kawal butang Back dan butang Tempah
-    const fabBack = document.getElementById('fab-back');
-    if(fabBack) fabBack.style.display = (p === 'dashboard' ? 'none' : 'flex');
-
+    if(target) target.classList.add('active-page');
+    
+    document.getElementById('fab-back').style.display = (p === 'dashboard' ? 'none' : 'flex');
     const fabT = document.getElementById('fab-tempah');
-    if (fabT) {
-        fabT.style.display = (session && session.role === 'user' && p === 'dashboard') ? 'flex' : 'none';
-    }
+    if (fabT) fabT.style.display = (session && session.role === 'user' && p === 'dashboard') ? 'flex' : 'none';
 
-    // 3. Logik Khas untuk Page Profile
+    // --- BAHAGIAN UNTUK KELUARKAN NAMA & MATRIK ---
     if(p === 'profile' && session) {
         const nameEl = document.getElementById('prof-name');
         const matrikEl = document.getElementById('prof-matrik');
-        const phoneEl = document.getElementById('prof-phone'); 
-
-        if(nameEl) nameEl.innerText = session.name || "-";
-        if(matrikEl) matrikEl.innerText = (session.role === 'admin' ? 'Administrator' : session.matrik || "-");
-        
-        // Safety check: Hanya update kalau element ni wujud di HTML
-        if(phoneEl) {
-            phoneEl.innerText = session.phone || "Tiada Maklumat";
-        }
+        if(nameEl) nameEl.innerText = session.name;
+        if(matrikEl) matrikEl.innerText = (session.role === 'admin' ? 'Administrator' : session.matrik);
     }
-    
-    // 4. Tutup menu automatik selepas tekan
-    const mainMenu = document.getElementById('mainMenu');
-    if(mainMenu) mainMenu.classList.remove('open');
+    document.getElementById('mainMenu').classList.remove('open');
 }
+
 
 function saveToLocal() { localStorage.setItem('atx_users', JSON.stringify(users)); localStorage.setItem('atx_bookings', JSON.stringify(bookings)); }
 function updateStatus(id, s) { const idx = bookings.findIndex(b => b.id === id); if(idx !== -1) { bookings[idx].status = s; saveToLocal(); renderData(); } }
 function deleteBooking(id) { if(confirm("Batal tempahan?")) { bookings = bookings.filter(b => b.id !== id); saveToLocal(); renderData(); } }
-
 function submitBooking() { 
-    const d = document.getElementById('bDate').value, 
-          s = document.getElementById('bStart').value, 
-          e = document.getElementById('bEnd').value, 
-          t = document.getElementById('bType').value; 
-
-    // Safety check supaya tidak crash kalau session kosong
-    if(!session || !session.matrik) return alert("Sesi tamat, sila login semula!");
-
+    const d=document.getElementById('bDate').value, s=document.getElementById('bStart').value, e=document.getElementById('bEnd').value, t=document.getElementById('bType').value; 
     if(d && s && e){ 
-        bookings.push({
-            id: Date.now(), 
-            matrik: session.matrik, // Ini kunci akaun baru boleh buat booking
-            uName: session.name, 
-            type: t, 
-            date: d, 
-            start: s, 
-            end: e, 
-            status: 'pending'
-        }); 
-        saveToLocal(); 
-        renderData(); 
-        showPage('dashboard'); 
-    } else { alert("Sila isi Tarikh & Masa!"); }
+        bookings.push({id:Date.now(), matrik:session.matrik, uName:session.name, type:t, date:d, start:s, end:e, status:'pending'}); 
+        saveToLocal(); renderData(); showPage('dashboard'); 
+    } 
 }
-
 
 function toggleMenu() { document.getElementById('mainMenu').classList.toggle('open'); }
 function applyTranslations() {
@@ -707,10 +581,5 @@ function applyTranslations() {
 
 window.addEventListener('DOMContentLoaded', () => {
     applyTranslations();
-    const isDark = localStorage.getItem('atx_darkmode') === 'true';
-    if (isDark) {
-        document.body.classList.add('dark-mode');
-        const toggle = document.getElementById('darkToggle');
-        if (toggle) toggle.checked = true; // SINC BUTANG TOGGLE ASAL
-    }
+    if (localStorage.getItem('atx_darkmode') === 'true') document.body.classList.add('dark-mode');
 });

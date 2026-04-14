@@ -41,13 +41,6 @@ body.dark-mode .input-label { color: #cbd5e1 !important; }
 body.dark-mode h1, body.dark-mode h2, body.dark-mode h4, body.dark-mode p, body.dark-mode .back-link { color: #ffffff !important; }
 body.dark-mode .form-container { background: #1e293b !important; }
 
-/* FIX BOX PUTIH PADA TULISAN MASA/TARIKH */
-.card small {
-    background: transparent !important; /* Paksa buang background putih dari JS */
-    color: var(--text) !important;
-    opacity: 0.8;
-}
-
 .lang-switcher-login {
     position: absolute;
     top: 20px;
@@ -99,10 +92,11 @@ body.dark-mode .lang-switcher-login span { color: #ffffff; }
 
 @keyframes pulse-live { 0%, 100% { transform: scale(0.95); opacity: 0.7; } 50% { transform: scale(1.05); opacity: 1; } }
 
+/* 1. Parent (Latar belakang biru/gradient) */
 #auth-screen { 
     display: flex; 
-    align-items: center;      
-    justify-content: center;   
+    align-items: center;      /* Kasi tengah secara Menegak (Atas-Bawah) */
+    justify-content: center;   /* Kasi tengah secara Mendatar (Kiri-Kanan) */
     min-height: 100vh; 
     width: 100%; 
     position: fixed; 
@@ -110,39 +104,39 @@ body.dark-mode .lang-switcher-login span { color: #ffffff; }
     left: 0; 
     background: linear-gradient(135deg, var(--primary), var(--accent)); 
     z-index: 9000; 
-    padding: 20px;            
+    padding: 20px;            /* Jarak selamat supaya kotak tidak kena tepi skrin */
 }
 
+/* 2. Kotak Putih (Container) */
 .auth-container { 
     position: relative; 
-    width: 100%;              
+    width: 100%;              /* Biar dia ikut max-width */
     max-width: 380px; 
-    max-height: 90vh; /* Hadkan tinggi supaya tidak terkeluar skrin */
+    height: auto !important;   /* Ini yang buat dia auto-shrink ikut content */
     background: white; 
     border-radius: 30px; 
-    overflow-y: auto; /* Benarkan scroll jika content tinggi */
+    overflow: hidden; 
     box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    
+    /* Tambah ini sbg langkah keselamatan */
     display: flex;
     flex-direction: column;
-    transition: 0.4s ease-in-out;
 }
 
-/* FIX DARK MODE UNTUK AUTH CONTAINER */
-body.dark-mode .auth-container {
-    background: #1e293b;
-}
-
+/* 3. Isi dalam Form */
 .form-container { 
     width: 100%; 
-    padding: 40px 30px;       
-    display: none;            
+    padding: 40px 30px;       /* Ruang dalam yang selesa */
+    display: none;            /* Akan jadi flex via JS/CSS logic */
     flex-direction: column; 
     text-align: center; 
+    background: white; 
 }
+
 
 #authBox:not(.active) .login-form { display: flex !important; }
 #authBox.active .signup-form { display: flex !important; }
-/* Forgot form ditukar via JS */
+#authBox.active .login-form { display: none !important; }
 
 .back-link { margin-top: 25px; color: #64748b; font-weight: 600; cursor: pointer; display: block; }
 
@@ -348,7 +342,7 @@ input, select {
     left: 0; 
     right: 0; 
     bottom: 0; 
-    background-color: #cbd5e1; /* Warna standard kelabu */
+    background-color: #ccc; 
     border-radius: 34px; 
     transition: .4s; 
 }
@@ -366,6 +360,7 @@ input, select {
 }
 
 input:checked + .slider { background-color: var(--success); }
+
 input:checked + .slider:before { transform: translateX(21px); }
 
 #app-content { display: none; height: 100vh; flex-direction: column; overflow: hidden; }
@@ -374,21 +369,35 @@ input:checked + .slider:before { transform: translateX(21px); }
 
 .active-page { display: block; }
 
+/* Pastikan warna ini sepadan dengan renderData() */
 .bg-live { background-color: #28a745 !important; }
 .bg-pending { background-color: #ffc107 !important; }
-.bg-ended { background-color: #dc3545 !important; } 
+.bg-ended { background-color: #dc3545 !important; } /* Merah untuk Ended/Rejected */
 
+/* Tambahan: Pastikan gambar profil dalam bulatan muncul */
+.profile-img-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* --- KEMASKINI UI TEMPAHAN (JARAK & SAIZ) --- */
+
+/* Tajuk "BUAT TEMPAHAN" kasi turun sikit dari header */
 #page-tempahan h2.page-title {
     margin-top: 20px !important;
     margin-bottom: 25px !important;
 }
 
+/* Kad Tempahan: Turunkan sedikit dari tajuk */
 #page-tempahan .card {
     margin-top: 20px !important; 
     padding: 25px;
     border-radius: 30px;
 }
 
+/* 1. Paksa Kotak Tarikh jadi 60% lebar sja */
 #bDate {
     width: 60% !important;
     min-width: 160px;
@@ -396,6 +405,7 @@ input:checked + .slider:before { transform: translateX(21px); }
     display: block;
 }
 
+/* 2. Pastikan Input Time seragam */
 #bStart, #bEnd {
     width: 100% !important;
     padding: 12px;
@@ -403,58 +413,12 @@ input:checked + .slider:before { transform: translateX(21px); }
     font-size: 15px;
 }
 
+/* 3. Jarak antara kumpulan input */
 #page-tempahan .input-group {
     margin-bottom: 20px;
 }
 
+/* 4. Jarak antara kotak Masa Mula & Tamat */
 #page-tempahan div[style*="display:flex"] {
     gap: 15px !important; 
-}
-
-/* --- UPGRADE UI PROFIL --- */
-.profile-info-list {
-    margin-top: 25px;
-    text-align: left;
-    background: var(--input-bg);
-    border-radius: 20px;
-    padding: 10px 20px;
-    transition: 0.3s;
-}
-
-.info-row {
-    padding: 15px 0;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-.info-row:last-child {
-    border-bottom: none;
-}
-
-.info-label {
-    display: block;
-    font-size: 10px;
-    font-weight: 800;
-    color: #64748b;
-    margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.info-value {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--primary);
-}
-
-/* Penyesuaian Mod Gelap */
-body.dark-mode .info-row {
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-
-body.dark-mode .info-value {
-    color: #ffffff;
-}
-
-body.dark-mode .info-label {
-    color: #94a3b8;
 }
