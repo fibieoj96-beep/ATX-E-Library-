@@ -1,6 +1,7 @@
 // ==========================================
 // 1. CONFIGURATION & DATA INITIALIZATION
 // ==========================================
+// Guna nama 'sb' supaya tidak gaduh dengan library 'supabase'
 const SB_URL = "https://eurpvtwlzvwvkegyekwf.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1cnB2dHdsenZ3dmtlZ3lla3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzQ4ODgsImV4cCI6MjA5MTc1MDg4OH0.qyPxQM5k4OB5TbrLAA1qQUfrChog8QQ_uhIw-6b5NEg";
 const sb = supabase.createClient(SB_URL, SB_KEY);
@@ -324,8 +325,9 @@ function renderData() {
     }
 }
 // ==========================================
-// 3. AUTH & 13. CONTAINER AUTO-EXPAND
+// 3. AUTHENTICATION (SUPABASE CLOUD)
 // ==========================================
+
 async function handleLogin() {
     const u = document.getElementById('logUser').value.trim();
     const p = document.getElementById('logPass').value;
@@ -339,63 +341,30 @@ async function handleLogin() {
         return;
     }
 
-    // SEMAK CLOUD: Cari user di table 'users'
-    const { data, error } = await sb
-        .from('users')
-        .select('*')
-        .eq('matrik', u)
-        .single();
+    try {
+        // Ambil data dari table 'users' di Supabase
+        const { data, error } = await sb
+            .from('users')
+            .select('*')
+            .eq('matrik', u)
+            .single();
 
-    if (error) {
-        console.error("Login Error:", error.message);
-        return alert("ID tidak dijumpai atau masalah rangkaian!");
+        if (error || !data) {
+            return alert("ID Matrik tidak dijumpai!");
+        }
+
+        if (data.pass === p) {
+            session = data;
+            loginSuccess();
+        } else {
+            alert("Kata laluan salah!");
+        }
+    } catch (err) {
+        alert("Ralat Rangkaian: " + err.message);
     }
-
-    if (data && data.pass === p) {
-        session = data;
-        loginSuccess();
-    } else {
-        alert("ID atau Password salah!");
-    }
-}
-
-async function fetchBookings() {
-    // Ambil semua data tempahan dari table 'bookings'
-    const { data, error } = await sb
-        .from('bookings')
-        .select('*')
-        .order('id', { ascending: false });
-
-    if (!error) {
-        bookings = data; // Simpan data cloud ke dalam variable global
-        renderData();    // Baru panggil render untuk lukis UI
-    } else {
-        console.error("Gagal tarik data booking:", error.message);
-    }
-}
-
-async function loginSuccess() {
-    // 1. Simpan sesi dalam phone supaya tidak payah login ulang-ulang
-    localStorage.setItem('atx_session', JSON.stringify(session));
-
-    // 2. Wajib: Tarik data tempahan yang paling baru dari Cloud
-    await fetchBookings();
-
-    // 3. Tukar paparan skrin
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('app-content').style.display = 'flex';
-    
-    // 4. Tunjuk view ikut peranan (Admin/User)
-    document.getElementById('admin-view').style.display = (session.role === 'admin' ? 'block' : 'none');
-    document.getElementById('student-view').style.display = (session.role === 'user' ? 'block' : 'none');
-    
-    // 5. Pergi ke Dashboard
-    showPage('dashboard');
 }
 
 async function handleSignup() {
-    console.log("Butang ditekan!"); // Kalau keluar di console, maksudnya butang OK
-
     const n = document.getElementById('regName').value.trim();
     const m = document.getElementById('regMatrik').value.trim();
     const p = document.getElementById('regPass').value;
@@ -403,23 +372,14 @@ async function handleSignup() {
     const s = document.getElementById('regSecret').value;
     const ph = document.getElementById('regPhone').value.trim();
 
-    // 1. Validasi Input
-    if (!n || !p || !ph) {
-        alert("Sila isi Nama, Password, dan No Telefon!");
-        return;
-    }
+    if (!n || !p || !ph) return alert("Sila isi maklumat wajib (Nama, No. Tel, Password)!");
+    if (r === 'admin' && s !== MASTER_KEY) return alert("Master Key Admin Salah!");
 
-    // 2. Semak Master Key (Ikut variable MASTER_KEY bos di atas)
-    if (r === 'admin' && s !== MASTER_KEY) {
-        alert("Master Key Admin Salah!");
-        return;
-    }
+    const autoID = (r === 'admin' ? "ADM-" : "STU-") + Date.now().toString().slice(-4);
+    const finalID = m || autoID;
 
     try {
-        const autoID = (r === 'admin' ? "ADM-" : "STU-") + Date.now().toString().slice(-4);
-        const finalID = m || autoID;
-
-        // 3. Tembak ke Supabase (Guna 'sb' kio!)
+        // Simpan data ke Cloud Supabase
         const { error } = await sb
             .from('users')
             .insert([{ 
@@ -431,11 +391,12 @@ async function handleSignup() {
             }]);
 
         if (error) {
-            alert("Ralat Cloud: " + error.message);
+            if (error.code === '23505') alert("No. Matrik atau Telefon sudah berdaftar!");
+            else alert("Gagal Daftar: " + error.message);
             return;
         }
 
-        alert("Pendaftaran Berjaya! ID: " + finalID);
+        alert("Pendaftaran Cloud Berjaya! Sila Login guna ID: " + finalID);
         showAuthForm('login');
 
     } catch (err) {
@@ -443,7 +404,34 @@ async function handleSignup() {
     }
 }
 
+async function loginSuccess() {
+    localStorage.setItem('atx_session', JSON.stringify(session));
+    
+    // Tarik data tempahan dari Cloud supaya skrin tidak kosong
+    await fetchBookings(); 
 
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-content').style.display = 'flex';
+    
+    // Tunjuk view ikut peranan
+    document.getElementById('admin-view').style.display = (session.role === 'admin' ? 'block' : 'none');
+    document.getElementById('student-view').style.display = (session.role === 'user' ? 'block' : 'none');
+    
+    renderData();
+    showPage('dashboard');
+}
+
+async function fetchBookings() {
+    const { data, error } = await sb
+        .from('bookings')
+        .select('*')
+        .order('id', { ascending: false });
+
+    if (!error) {
+        bookings = data || [];
+        renderData();
+    }
+}
 
 function checkRole() {
     const role = document.getElementById('regRole').value;
