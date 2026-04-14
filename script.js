@@ -368,48 +368,68 @@ function handleSignup() {
 
 
 function checkRole() {
-    const r = document.getElementById('regRole').value;
-    document.getElementById('adminKeyBox').style.display = (r === 'admin' ? 'block' : 'none');
-    const mInput = document.getElementById('matrikInputGroup');
-    if(mInput) mInput.style.display = (r === 'admin' ? 'none' : 'block');
-}
+    const role = document.getElementById('regRole').value;
+    const adminKeyBox = document.getElementById('adminKeyBox');
+    const matrikGroup = document.getElementById('matrikInputGroup');
 
-function toggleAuth() { 
-    const box = document.getElementById('authBox');
-    const loginForm = document.querySelector('.login-form');
-    const signupForm = document.querySelector('.signup-form');
-    const forgotForm = document.querySelector('.forgot-form');
+    if (role === 'admin') {
+        adminKeyBox.style.display = 'block';
+        matrikGroup.style.display = 'none';
 
-    box.classList.toggle('active');
-
-    // 13. Auto-Expand Container height (Logic asal bos)
-    if (box.classList.contains('active')) {
-        box.style.maxHeight = "850px"; // Kasi tinggi sikit sbb signup banyak field
-        signupForm.style.display = 'flex';
-        loginForm.style.display = 'none';
-        forgotForm.style.display = 'none';
     } else {
-        box.style.maxHeight = "500px";
-        signupForm.style.display = 'none';
-        loginForm.style.display = 'flex';
-        forgotForm.style.display = 'none';
+        adminKeyBox.style.display = 'none';
+        matrikGroup.style.display = 'block';
     }
 }
 
-// Tambahan: Fungsi untuk switch ke page Lupa Password (WhatsApp)
-function toggleForgot() {
-    const loginForm = document.querySelector('.login-form');
-    const forgotForm = document.querySelector('.forgot-form');
-    const signupForm = document.querySelector('.signup-form');
 
-    signupForm.style.display = 'none';
-    
-    if (forgotForm.style.display === 'flex') {
-        forgotForm.style.display = 'none';
-        loginForm.style.display = 'flex';
+function showAuthForm(type) {
+    const loginForm = document.querySelector('.login-form');
+    const signupForm = document.querySelector('.signup-form');
+    const forgotForm = document.querySelector('.forgot-form');
+    const authBox = document.getElementById('authBox');
+
+    // Sembunyikan semua borang sapa murni
+    if(loginForm) loginForm.style.display = 'none';
+    if(signupForm) signupForm.style.display = 'none';
+    if(forgotForm) forgotForm.style.display = 'none';
+
+    // Tunjuk yang berkenaan sja
+    if (type === 'signup') {
+        if(authBox) authBox.classList.add('active');
+        if(signupForm) signupForm.style.display = 'flex';
+    } else if (type === 'forgot') {
+        if(forgotForm) forgotForm.style.display = 'flex';
     } else {
-        loginForm.style.display = 'none';
-        forgotForm.style.display = 'flex';
+        if(authBox) authBox.classList.remove('active');
+        if(loginForm) loginForm.style.display = 'flex';
+    }
+}
+
+function backToLogin() {
+    // 1. Cari semua borang
+    const login = document.querySelector('.login-form');
+    const signup = document.querySelector('.signup-form');
+    const forgot = document.querySelector('.forgot-form');
+    const box = document.getElementById('authBox');
+
+    // 2. Paksa tutup semua, buka Login sja
+    if(login) login.style.setProperty('display', 'flex', 'important');
+    if(signup) signup.style.setProperty('display', 'none', 'important');
+    if(forgot) forgot.style.setProperty('display', 'none', 'important');
+
+    // 3. Buang class active supaya kotak jadi pendek balik
+    if(box) box.classList.remove('active');
+    
+    console.log("Balik ke Login sapa murni!");
+}
+
+function toggleAuth() {
+    const authBox = document.getElementById('authBox');
+    if (authBox.classList.contains('active')) {
+        showAuthForm('login');
+    } else {
+        showAuthForm('signup');
     }
 }
 

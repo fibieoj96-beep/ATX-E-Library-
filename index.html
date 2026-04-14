@@ -10,7 +10,7 @@
 <body>
 
 <div id="auth-screen">
-    <div class="auth-container" id="authBox">
+        <div class="auth-container" id="authBox">
         <div class="lang-switcher-login">
             <span onclick="setLanguage('ms')" id="lang-ms" class="active">BM</span>
             <span style="opacity: 0.3; cursor: default;">|</span>
@@ -30,51 +30,58 @@
                     <svg id="eye-icon-logPass" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 </div>
                 <p style="margin-top:10px; font-size:12px; text-align: right;">
-                    <span onclick="toggleForgot()" style="color:var(--danger); cursor:pointer; font-weight:600;" data-t="forgot_pass">Lupa Kata Laluan?</span>
+                    <span onclick="showAuthForm('forgot')" style="color:var(--danger); cursor:pointer; font-weight:600;" data-t="forgot_pass">Lupa Kata Laluan?</span>
                 </p>
             </div>
             <button class="btn-auth-full" onclick="handleLogin()" data-t="signin_btn">SIGN IN</button>
             <p style="margin-top:25px; font-size:13px;">
                 <span data-t="new_here">New?</span> 
-                <span onclick="toggleAuth()" style="color:var(--accent); font-weight:bold; cursor:pointer;" data-t="register_link">Register</span>
+                <span onclick="showAuthForm('signup')" style="color:var(--accent); font-weight:bold; cursor:pointer;" data-t="register_link">Register</span>
             </p>
         </div>
 
-        <div class="form-container signup-form" style="display:none;">
-            <h2 data-t="reg_title">CREATE ACCOUNT</h2>
-            <div class="input-group">
-                <span class="input-label" data-t="role">Role</span>
-                <select id="regRole" onchange="checkRole()">
-                    <option value="user" data-t="student">Student</option>
-                    <option value="admin" data-t="admin">Admin</option>
-                </select>
-            </div>
-            <div id="adminKeyBox" style="display:none;" class="input-group">
-                <span class="input-label" data-t="master_key">Master Key</span>
-                <input type="password" id="regSecret" data-t="master_placeholder">
-            </div>
-            <div class="input-group">
-                <span class="input-label" data-t="full_name">Full Name</span>
-                <input type="text" id="regName" data-t="name_placeholder">
-            </div>
+       <div class="form-container signup-form" style="display:none;">
+    <h2 data-t="reg_title" style="margin-top:25px; text-align:center;">CIPTA AKAUN</h2>
+    
+    <div class="input-group">
+        <span class="input-label" data-t="role">PERANAN</span>
+        <select id="regRole" onchange="checkRole()" style="width:100%;">
+            <option value="user" data-t="student">Pelajar</option>
+            <option value="admin" data-t="admin">Admin</option>
+        </select>
+    </div>
 
-            <div class="input-group">
-                <span class="input-label" data-t="phone_label">No. Telefon (WhatsApp)</span>
-                <input type="text" id="regPhone" placeholder="601XXXXXXXX">
-            </div>
-            
-            <div class="input-group" id="matrikInputGroup">
-                <span class="input-label" data-t="student_id">Student ID</span>
-                <input type="text" id="regMatrik" data-t="id_placeholder">
-            </div>
+    <div id="adminKeyBox" style="display:none;" class="input-group">
+        <span class="input-label" style="color:var(--danger); font-weight:900;">MASTER KEY ADMIN</span>
+        <input type="password" id="regSecret" placeholder="Masukkan Kod Rahsia">
+    </div>
 
-            <div class="input-group">
-                <span class="input-label" data-t="password">Password</span>
-                <input type="password" id="regPass" data-t="pass_placeholder">
-            </div>
-            <button class="btn-auth-full" style="background:var(--success);" onclick="handleSignup()" data-t="register_btn">REGISTER NOW</button>
-            <p class="back-link" onclick="toggleAuth()" data-t="back_to_login">← Back</p>
-        </div>
+    <div class="input-group">
+        <span class="input-label" data-t="full_name">NAMA PENUH</span>
+        <input type="text" id="regName" placeholder="Nama Penuh">
+    </div>
+
+    <div class="input-group">
+        <span class="input-label" data-t="phone_label">NO. TELEFON (WHATSAPP)</span>
+        <input type="text" id="regPhone" placeholder="601XXXXXXXX">
+    </div>
+    
+    <div class="input-group" id="matrikInputGroup">
+        <span class="input-label" data-t="student_id">NO. MATRIK</span>
+        <input type="text" id="regMatrik" placeholder="Contoh: 07DDT23F1001">
+    </div>
+
+    <div class="input-group">
+        <span class="input-label" data-t="password">KATA LALUAN</span>
+        <input type="password" id="regPass" placeholder="••••••••">
+    </div>
+
+    <button class="btn-auth-full" style="background:var(--success); margin-top:10px;" onclick="handleSignup()" data-t="register_btn">DAFTAR SEKARANG</button>
+    
+    <p style="text-align:center; margin-top:20px;">
+        <span class="back-link" onclick="showAuthForm('login')" style="cursor:pointer; font-weight:bold; color:var(--primary); font-size:13px;" data-t="back_to_login">← KEMBALI KE LOGIN</span>
+    </p>
+</div>
 
         <div class="form-container forgot-form" style="display:none;">
             <h2 data-t="forgot_pass">LUPA KATA LALUAN</h2>
@@ -84,7 +91,21 @@
                 <input type="text" id="forgotPhone" placeholder="601XXXXXXXX">
             </div>
             <button class="btn-auth-full" onclick="sendWhatsAppReset()" style="background: #25D366; border:none; color:white; font-weight:bold;">HANTAR KOD VIA WHATSAPP</button>
-            <p class="back-link" onclick="toggleForgot()" data-t="back_to_login">← Kembali</p>
+            
+            <p class="back-link" onclick="showAuthForm('login')" style="cursor:pointer; margin-top:20px; font-size:13px; font-weight:bold; color:var(--primary);" data-t="back_to_login">← Kembali</p>
+        </div>
+
+    </div>
+
+        <div class="form-container forgot-form" style="display:none;">
+            <h2 data-t="forgot_pass">LUPA KATA LALUAN</h2>
+            <p style="font-size: 11px; margin-bottom: 20px; color: #64748b;">Kod reset akan dihantar terus ke WhatsApp anda.</p>
+            <div class="input-group">
+                <span class="input-label" data-t="phone_label">No. Telefon</span>
+                <input type="text" id="forgotPhone" placeholder="601XXXXXXXX">
+            </div>
+            <button class="btn-auth-full" onclick="sendWhatsAppReset()" style="background: #25D366; border:none; color:white; font-weight:bold;">HANTAR KOD VIA WHATSAPP</button>
+            <p class="back-link" onclick="showAuthForm('forgot')" data-t="back_to_login">← Kembali</p>
         </div>
 
     </div>

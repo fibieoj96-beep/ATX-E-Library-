@@ -50,15 +50,13 @@ body.dark-mode .form-container { background: #1e293b !important; }
 
 .lang-switcher-login {
     position: absolute;
-    top: 20px;
+    top: 15px;
     right: 20px;
     display: flex;
-    gap: 8px;
-    align-items: center;
-    z-index: 10001;
-    background: rgba(0, 51, 102, 0.1);
-    padding: 6px 14px;
-    border-radius: 20px;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 800;
+    z-index: 100;
 }
 
 .lang-switcher-login span {
@@ -113,38 +111,55 @@ body.dark-mode .lang-switcher-login span { color: #ffffff; }
     padding: 20px;            
 }
 
-.auth-container { 
-    position: relative; 
-    width: 100%;              
-    max-width: 380px; 
-    max-height: 90vh; /* Hadkan tinggi supaya tidak terkeluar skrin */
-    background: white; 
-    border-radius: 30px; 
-    overflow-y: auto; /* Benarkan scroll jika content tinggi */
+.auth-container {
+    position: relative;
+    width: 90%;
+    max-width: 380px;
+    background: white;
+    border-radius: 30px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    display: flex;
-    flex-direction: column;
-    transition: 0.4s ease-in-out;
+    margin: auto;
+    transition: 0.3s ease-in-out;
 }
 
-/* FIX DARK MODE UNTUK AUTH CONTAINER */
 body.dark-mode .auth-container {
     background: #1e293b;
 }
 
-.form-container { 
-    width: 100%; 
-    padding: 40px 30px;       
-    display: none;            
-    flex-direction: column; 
-    text-align: center; 
+.form-container {
+    padding: 35px 25px 25px 25px;
+    display: none; /* Sembunyi secara default */
+    flex-direction: column;
+    gap: 15px;
+}
+
+
+.form-container h2 {
+    margin-top: 25px; 
+    margin-bottom: 25px;
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--primary);
+    text-align: center;
+}
+/* Logic paparan murni */
+.active-form { 
+    display: flex !important; 
 }
 
 #authBox:not(.active) .login-form { display: flex !important; }
 #authBox.active .signup-form { display: flex !important; }
 /* Forgot form ditukar via JS */
 
-.back-link { margin-top: 25px; color: #64748b; font-weight: 600; cursor: pointer; display: block; }
+.back-link {
+    text-align: center;
+    width: 100%;
+    cursor: pointer;
+    margin-top: 20px;
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--primary);
+}
 
 .input-group { position: relative; margin-bottom: 18px; text-align: left; width: 100%; }
 
@@ -486,4 +501,43 @@ body.dark-mode .info-label {
     color: var(--success) !important;
     border-color: var(--success) !important;
     background: rgba(40, 167, 69, 0.05);
+}
+
+.auth-container {
+    display: flex;
+    flex-direction: column;
+    min-height: auto !important;
+    max-height: 95vh;
+    overflow-y: auto;
+}
+
+.form-container {
+    display: none; 
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Ini untuk pastikan borang pertama (Login) muncul masa mula-mula buka */
+.login-form {
+    display: flex;
+}
+
+.login-form p {
+    text-align: center;
+    width: 100%;
+    margin-top: 25px;
+}
+
+.signup-form p, .login-form p {
+    text-align: center !important;
+    width: 100%;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+/* Beri ruang sedikit supaya tidak sesak di iPhone */
+.input-group {
+    margin-bottom: 12px;
 }
