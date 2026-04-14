@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>E-Library ATX</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+</head>
+<body>
+
+<div id="auth-screen">
+    <div class="auth-container" id="authBox">
+        <div class="lang-switcher-login">
+            <span onclick="setLanguage('ms')" id="lang-ms" class="active">BM</span>
+            <span style="opacity: 0.3; cursor: default;">|</span>
+            <span onclick="setLanguage('en')" id="lang-en">EN</span>
+        </div>
+
+        <div class="form-container login-form">
+            <h2 data-t="login_title">LOGIN</h2>
+            <div class="input-group">
+                <span class="input-label" data-t="student_id">Student ID</span>
+                <input type="text" id="logUser" data-t="id_placeholder">
+            </div>
+            <div class="input-group">
+                <span class="input-label" data-t="password">Password</span>
+                <input type="password" id="logPass" placeholder="••••••••">
+                <div class="toggle-password" onclick="togglePassword('logPass')">
+                    <svg id="eye-icon-logPass" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </div>
+                <p style="margin-top:10px; font-size:12px; text-align: right;">
+                    <span onclick="toggleForgot()" style="color:var(--danger); cursor:pointer; font-weight:600;" data-t="forgot_pass">Lupa Kata Laluan?</span>
+                </p>
+            </div>
+            <button class="btn-auth-full" onclick="handleLogin()" data-t="signin_btn">SIGN IN</button>
+            <p style="margin-top:25px; font-size:13px;">
+                <span data-t="new_here">New?</span> 
+                <span onclick="toggleAuth()" style="color:var(--accent); font-weight:bold; cursor:pointer;" data-t="register_link">Register</span>
+            </p>
+        </div>
+
+        <div class="form-container signup-form" style="display:none;">
+            <h2 data-t="reg_title">CREATE ACCOUNT</h2>
+            <div class="input-group">
+                <span class="input-label" data-t="role">Role</span>
+                <select id="regRole" onchange="checkRole()">
+                    <option value="user" data-t="student">Student</option>
+                    <option value="admin" data-t="admin">Admin</option>
+                </select>
+            </div>
+            <div id="adminKeyBox" style="display:none;" class="input-group">
+                <span class="input-label" data-t="master_key">Master Key</span>
+                <input type="password" id="regSecret" data-t="master_placeholder">
+            </div>
+            <div class="input-group">
+                <span class="input-label" data-t="full_name">Full Name</span>
+                <input type="text" id="regName" data-t="name_placeholder">
+            </div>
+
+            <div class="input-group">
+                <span class="input-label" data-t="phone_label">No. Telefon (WhatsApp)</span>
+                <input type="text" id="regPhone" placeholder="601XXXXXXXX">
+            </div>
+            
+            <div class="input-group" id="matrikInputGroup">
+                <span class="input-label" data-t="student_id">Student ID</span>
+                <input type="text" id="regMatrik" data-t="id_placeholder">
+            </div>
+
+            <div class="input-group">
+                <span class="input-label" data-t="password">Password</span>
+                <input type="password" id="regPass" data-t="pass_placeholder">
+            </div>
+            <button class="btn-auth-full" style="background:var(--success);" onclick="handleSignup()" data-t="register_btn">REGISTER NOW</button>
+            <p class="back-link" onclick="toggleAuth()" data-t="back_to_login">← Back</p>
+        </div>
+
+        <div class="form-container forgot-form" style="display:none;">
+            <h2 data-t="forgot_pass">LUPA KATA LALUAN</h2>
+            <p style="font-size: 11px; margin-bottom: 20px; color: #64748b;">Kod reset akan dihantar terus ke WhatsApp anda.</p>
+            <div class="input-group">
+                <span class="input-label" data-t="phone_label">No. Telefon</span>
+                <input type="text" id="forgotPhone" placeholder="601XXXXXXXX">
+            </div>
+            <button class="btn-auth-full" onclick="sendWhatsAppReset()" style="background: #25D366; border:none; color:white; font-weight:bold;">HANTAR KOD VIA WHATSAPP</button>
+            <p class="back-link" onclick="toggleForgot()" data-t="back_to_login">← Kembali</p>
+        </div>
+
+    </div>
+</div>
+
+<div id="app-content" style="display:none;">
+    <div class="top-header">
+        <button id="fab-back" onclick="showPage('dashboard')" style="display:none;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="menu-wrapper" id="mainMenu">
+            <div class="menu-header" onclick="toggleMenu()"><span data-t="options">OPTIONS</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:5px;"><path d="M6 9l6 6 6-6"/></svg></div>
+            <ul class="fold-list">
+                <li><a href="#" onclick="showPage('profile')" data-t="profile">My Profile</a></li>
+                <li><a href="#" onclick="showPage('settings')" data-t="settings">Settings</a></li>
+                <li><a href="#" onclick="location.reload()" style="color:var(--danger)" data-t="logout">Logout</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="page-dashboard" class="page active-page">
+        <div class="dashboard-header"><h1 class="page-title" data-t="dashboard_title">Dashboard</h1><p id="welcome">Hi, User</p></div>
+        
+        <div id="admin-view" style="display:none;">
+            <button class="btn-auth-full" style="margin-bottom:25px;" onclick="showPage('admin')" data-t="admin_panel">ADMIN PANEL</button>
+            
+            <div class="card" style="border: 2px solid var(--accent); background: rgba(0, 86, 179, 0.05); text-align: center;">
+                <h4 style="font-size: 13px; margin-bottom: 15px; color: var(--primary);" data-t="scanner_title">ATTENDANCE VERIFICATION (QR)</h4>
+                <button id="btn-start" class="btn-auth-full" style="background: var(--accent); margin-bottom: 10px;" onclick="startBruteScanner()" data-t="open_cam">OPEN SCANNER CAMERA</button>
+                <button id="btn-stop" class="btn-auth-full" style="background: var(--danger); margin-bottom: 10px; display: none;" onclick="stopBruteScanner()" data-t="close_cam">CLOSE CAMERA</button>
+                
+                <div id="scanner-wrapper" class="scanner-safe-wrapper">
+                    <canvas id="safe-canvas"></canvas>
+                    <div class="laser-line"></div>
+                </div>
+
+                <div style="display: flex; gap: 5px; margin-top: 10px;">
+                    <input type="text" id="manual-scan-id" data-t="manual_id_placeholder" style="flex: 1; font-size: 12px;">
+                    <button onclick="manualCheckInOut()" style="background: var(--success); color: white; border: none; padding: 0 15px; border-radius: 8px; font-weight: bold;">OK</button>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:20px; margin-bottom:20px;">
+                <div class="card" style="flex:1; text-align:center;"><h5 data-t="reading">READING</h5><p id="stat-bacaan">0/5</p></div>
+                <div class="card" style="flex:1; text-align:center;"><h5 data-t="discussion">DISCUSSION</h5><p id="stat-diskusi">0/2</p></div>
+                <div class="card" style="flex:1; text-align:center;"><h5 data-t="computer">COMPUTER</h5><p id="stat-komputer">0/10</p></div>
+            </div>
+            
+            <h3 style="margin-bottom:10px; font-size:15px; color:var(--primary);" data-t="active_student_sessions">Active Student Sessions</h3>
+            <div id="live-bookings"></div>
+
+            <div class="card" style="margin-top:20px; padding:10px;">
+                <button onclick="toggleAdminLiveHistory()" style="width:100%; background:none; border:none; display:flex; justify-content:space-between; align-items:center; cursor:pointer; color:var(--primary); font-weight:bold;">
+                    <span data-t="history_ended">SESSION HISTORY (ENDED)</span>
+                    <svg id="admin-history-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="transition:0.3s;"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div id="admin-live-history" style="display:none; margin-top:15px; border-top:1px solid #eee; padding-top:10px;"></div>
+            </div>
+        </div>
+
+        <div id="student-view" style="display:none;">
+            <div class="card" style="background:var(--accent); color:white;">
+                <p style="font-size:11px; opacity:0.8;" data-t="my_active_bookings">MY ACTIVE BOOKINGS</p>
+                <h2 id="countMy" style="font-size:36px;">0</h2>
+            </div>
+            <div id="myList"></div>
+            <div class="card" style="margin-top:20px; padding:10px;">
+                <button onclick="toggleHistory()" style="width:100%; background:none; border:none; display:flex; justify-content:space-between; align-items:center; cursor:pointer; color:var(--primary); font-weight:bold;">
+                    <span data-t="booking_history">BOOKING HISTORY</span>
+                    <svg id="history-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="transition:0.3s;"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div id="history-list" style="display:none; margin-top:15px; border-top:1px solid #eee; padding-top:10px;"></div>
+            </div>
+        </div>
+
+        <div class="body-carousel">
+            <p style="font-size:11px; font-weight:bold; color:var(--primary); margin-bottom:10px; letter-spacing:1px;" data-t="info_college">INFO & COLLEGE PROGRAMS</p>
+            <div class="carousel-scroll">
+                <div class="carousel-card"><h4 data-t="new_books">New Books</h4><p data-t="books_desc">Digital Tech 2026 at Shelf A1.</p></div>
+                <div class="carousel-card" style="border-bottom-color:var(--success);"><h4 data-t="literacy">Literacy</h4><p data-t="workshop_desc">Workshop on April 20th.</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="qr-modal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center;">
+        <div class="card" style="text-align:center; width: 85%; max-width:320px;">
+            <h3 id="qr-title" style="margin-bottom: 15px;" data-t="qr_modal_title">BOOKING QR CODE</h3>
+            <div id="qr-image" style="background: white; padding: 15px; border-radius: 15px; display: inline-block;"></div>
+            <p id="qr-id-display" style="margin-top: 10px; font-weight: bold; font-size: 18px; color: var(--primary);"></p>
+            <button class="btn-auth-full" onclick="closeQR()" data-t="close">CLOSE</button>
+        </div>
+    </div>
+
+    <div id="page-admin" class="page">
+        <h2 class="page-title" data-t="admin_panel">Admin Panel</h2>
+        <div id="adminTable"></div>
+        <h4 style="margin-top:30px; margin-bottom:15px; font-size:14px; opacity:0.8;" data-t="archive">RECORD ARCHIVE</h4>
+        <div id="adminHistoryTable"></div>
+    </div>
+
+   <div id="page-profile" class="page">
+    <h2 class="page-title" data-t="profile">My Profile</h2>
+    
+    <div class="card" style="text-align:center; padding: 30px 20px;">
+        <div class="profile-img-circle" id="profile-display" style="margin: 0 auto 15px;"></div>
+        <button onclick="document.getElementById('imgInput').click()" style="color:var(--accent); font-size:11px; font-weight:800; background:none; border:none; cursor:pointer; text-transform:uppercase; letter-spacing:1px;" data-t="change_photo">CHANGE PHOTO</button>
+        <input type="file" id="imgInput" style="display:none" accept="image/*" onchange="uploadPhoto(event)">
+
+        <div style="margin-top: 30px; text-align: left; background: var(--input-bg); border-radius: 20px; padding: 5px 20px;">
+            
+            <div style="padding: 15px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                <label style="display:block; font-size:10px; font-weight:800; color:#64748b; margin-bottom:4px; text-transform:uppercase;">Nama Penuh</label>
+                <div id="prof-name" style="font-size:16px; font-weight:700; color:var(--primary);">-</div>
+            </div>
+
+            <div style="padding: 15px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                <label style="display:block; font-size:10px; font-weight:800; color:#64748b; margin-bottom:4px; text-transform:uppercase;">No. Matrik</label>
+                <div id="prof-matrik" style="font-size:16px; font-weight:700; color:var(--primary);">-</div>
+            </div>
+
+            <div style="padding: 15px 0;">
+                <label style="display:block; font-size:10px; font-weight:800; color:#64748b; margin-bottom:4px; text-transform:uppercase;">Nombor Telefon</label>
+                <div id="prof-phone" style="font-size:16px; font-weight:700; color:var(--primary);">-</div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+    <div id="page-settings" class="page">
+        <h2 class="page-title" data-t="settings">Account Settings</h2>
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+            <span data-t="dark_mode">Dark Mode</span>
+            <label class="switch"><input type="checkbox" id="darkToggle" onchange="toggleDarkMode()"><span class="slider"></span></label>
+        </div>
+        
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span data-t="app_language">App Language</span>
+                <select id="langSelect" onchange="setLanguage(this.value)" style="width:120px !important; padding:5px; font-size:12px; border:1px solid #ddd;">
+                    <option value="ms">Bahasa Melayu</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="input-group"><span class="input-label" data-t="name">Name</span><input type="text" id="set-name"></div>
+            <button class="btn-auth-full" onclick="updateAccountInfo()" data-t="update_name">UPDATE NAME</button>
+            <hr style="margin:25px 0; opacity:0.1;">
+            <div class="input-group"><span class="input-label" data-t="new_password">New Password</span><input type="password" id="set-pass"></div>
+            <button class="btn-auth-full" style="background:var(--accent);" onclick="updatePassword()" data-t="change_password">CHANGE PASSWORD</button>
+        </div>
+    </div>
+
+  <div id="page-tempahan" class="page">
+    <h2 data-t="make_booking">Buat Tempahan</h2>
+    <div class="card">
+        <div class="input-group">
+            <span class="input-label" data-t="choose_room">Pilih Bilik</span>
+            <select id="bType">
+                <option value="Bilik Bacaan" data-t="reading_room">Bilik Bacaan</option>
+                <option value="Bilik Diskusi" data-t="discussion_room">Bilik Diskusi</option>
+                <option value="Zon Komputer" data-t="comp_zone">Zon Komputer</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <span class="input-label" data-t="booking_date">Tarikh Tempahan</span>
+            <input type="date" id="bDate">
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <div class="input-group" style="flex:1;">
+                <span class="input-label" data-t="start_time">Masa Mula</span>
+                <input type="time" id="bStart">
+            </div>
+            <div class="input-group" style="flex:1;">
+                <span class="input-label" data-t="end_time">Masa Tamat</span>
+                <input type="time" id="bEnd">
+            </div>
+        </div>
+
+        <button class="btn-auth-full" style="margin-top:20px;" onclick="submitBooking()" data-t="confirm_booking">SAHKAN TEMPAHAN</button>
+    </div>
+</div>
+
+
+    <button id="fab-tempah" class="fab-add" onclick="showPage('tempahan')" data-t="make_booking">MAKE A BOOKING</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
