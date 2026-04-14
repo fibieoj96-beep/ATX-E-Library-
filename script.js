@@ -36,7 +36,7 @@ const translations = {
         open_cam: "BUKA KAMERA SCANNER",
         close_cam: "TUTUP KAMERA",
         reading: "BACAAN",
-        discussion: "DISKUSI",
+        discussion: "PERBINCANGAN",
         computer: "KOMPUTER",
         active_student_sessions: "Sesi Pelajar Aktif",
         history_ended: "SEJARAH SESI (TAMAT)",
@@ -64,7 +64,8 @@ const translations = {
         comp_zone: "Zon Komputer",
         booking_date: "Tarikh Tempahan",
         start_time: "Masa Mula",
-        end_time: "Masa Tamat"
+        end_time: "Masa Tamat",
+		hi : "Hai"
     },
     en: {
         login_title: "LOGIN",
@@ -118,7 +119,8 @@ const translations = {
         comp_zone: "Computer Zone",
         booking_date: "Booking Date",
         start_time: "Start Time",
-        end_time: "End Time"
+        end_time: "End Time",
+		hi: "Hi"
     }
 };
 
