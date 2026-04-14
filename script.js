@@ -454,30 +454,24 @@ function toggleAuth() {
 // Tambahan: Fungsi hantar kod reset ke WhatsApp
 function sendWhatsAppReset() {
     const phone = document.getElementById('forgotPhone').value.trim();
-    // Cari user dalam database guna nombor telefon
     const user = users.find(u => u.phone === phone);
-    
+
     if (!user) {
-        alert("Nombor telefon tidak terdaftar!");
+        alert("Nombor telefon tidak dijumpai!");
         return;
     }
 
-    // 1. Janakan password baru
     const newPass = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // 2. Kemaskini password dalam database (Array users)
-    user.pass = newPass; 
-    
-    // 3. Simpan ke LocalStorage (Wajib!)
+    user.pass = newPass;
     saveToLocal();
 
-    // 4. Mesej yang lebih jelas (Sebutkan No Matrik sekali)
-    const msg = "Hai " + user.name + ",\n\nKata laluan sementara E-Library ATX anda: " + newPass + "\nID Login: " + user.matrik + "\n\nSila log masuk guna ID Login di atas dan tukar password segera.";
-    
+    const roleLabel = (user.role === 'admin' ? "ADMIN" : "PELAJAR");
+    const msg = "Hai " + user.name + " (" + roleLabel + "),\n\nKata laluan sementara E-Library ATX anda: " + newPass + "\nID Login: " + user.matrik + "\n\nSila log masuk segera dan tukar password anda.";
+
     window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(msg), '_blank');
-    
     showAuthForm('login');
 }
+
 
 // ==========================================
 // 4. SCANNER, QR, CHECK-IN/OUT
