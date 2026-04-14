@@ -3,7 +3,7 @@
 // ==========================================
 const SB_URL = "https://eurpvtwlzvwvkegyekwf.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1cnB2dHdsenZ3dmtlZ3lla3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzQ4ODgsImV4cCI6MjA5MTc1MDg4OH0.qyPxQM5k4OB5TbrLAA1qQUfrChog8QQ_uhIw-6b5NEg";
-const sb = createClient(SB_URL, SB_KEY);
+const sb = supabase.createClient(SB_URL, SB_KEY);
 
 const MASTER_KEY = "ATX_ADMIN_2026";
 const LIMITS = { "Reading Room": 5, "Discussion Room": 2, "Computer Zone": 10 };
@@ -330,33 +330,67 @@ async function handleLogin() {
     const u = document.getElementById('logUser').value.trim();
     const p = document.getElementById('logPass').value;
 
+    if (!u || !p) return alert("Sila isi ID dan Password!");
+
+    // Pintu belakang Admin (Hardcoded)
     if (u === "admin" && p === "123") {
         session = { name: "Administrator", matrik: "ADM-001", role: "admin", phone: "60123456789" };
         loginSuccess();
         return;
     }
 
-    const { data, error } = await supabase
+    // SEMAK CLOUD: Cari user di table 'users'
+    const { data, error } = await sb
         .from('users')
         .select('*')
         .eq('matrik', u)
         .single();
 
+    if (error) {
+        console.error("Login Error:", error.message);
+        return alert("ID tidak dijumpai atau masalah rangkaian!");
+    }
+
     if (data && data.pass === p) {
         session = data;
         loginSuccess();
     } else {
-        alert("ID atau Password Salah!");
+        alert("ID atau Password salah!");
     }
 }
 
-function loginSuccess() {
+async function fetchBookings() {
+    // Ambil semua data tempahan dari table 'bookings'
+    const { data, error } = await sb
+        .from('bookings')
+        .select('*')
+        .order('id', { ascending: false });
+
+    if (!error) {
+        bookings = data; // Simpan data cloud ke dalam variable global
+        renderData();    // Baru panggil render untuk lukis UI
+    } else {
+        console.error("Gagal tarik data booking:", error.message);
+    }
+}
+
+async function loginSuccess() {
+    // 1. Simpan sesi dalam phone supaya tidak payah login ulang-ulang
     localStorage.setItem('atx_session', JSON.stringify(session));
+
+    // 2. Wajib: Tarik data tempahan yang paling baru dari Cloud
+    await fetchBookings();
+
+    // 3. Tukar paparan skrin
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app-content').style.display = 'flex';
+    
+    // 4. Tunjuk view ikut peranan (Admin/User)
     document.getElementById('admin-view').style.display = (session.role === 'admin' ? 'block' : 'none');
     document.getElementById('student-view').style.display = (session.role === 'user' ? 'block' : 'none');
-    renderData();
+    
+    // 5. Pergi ke Dashboard
+    showPage('dashboard');
 }
 
 async function handleSignup() {
