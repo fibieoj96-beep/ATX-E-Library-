@@ -394,6 +394,8 @@ async function loginSuccess() {
 }
 
 async function handleSignup() {
+    console.log("Butang ditekan!"); // Kalau keluar di console, maksudnya butang OK
+
     const n = document.getElementById('regName').value.trim();
     const m = document.getElementById('regMatrik').value.trim();
     const p = document.getElementById('regPass').value;
@@ -401,29 +403,46 @@ async function handleSignup() {
     const s = document.getElementById('regSecret').value;
     const ph = document.getElementById('regPhone').value.trim();
 
-    if (!n || !p || !ph) return alert("Sila isi maklumat wajib!");
-    if (r === 'admin' && s !== "1234") return alert("Master Key Salah!");
+    // 1. Validasi Input
+    if (!n || !p || !ph) {
+        alert("Sila isi Nama, Password, dan No Telefon!");
+        return;
+    }
 
-    const autoID = (r === 'admin' ? "ADM-" : "STU-") + Date.now().toString().slice(-4);
-    const finalID = m || autoID;
+    // 2. Semak Master Key (Ikut variable MASTER_KEY bos di atas)
+    if (r === 'admin' && s !== MASTER_KEY) {
+        alert("Master Key Admin Salah!");
+        return;
+    }
 
-    const { error } = await supabase
-        .from('users')
-        .insert([{ 
-            matrik: finalID, 
-            name: n, 
-            pass: p, 
-            role: r, 
-            phone: ph 
-        }]);
+    try {
+        const autoID = (r === 'admin' ? "ADM-" : "STU-") + Date.now().toString().slice(-4);
+        const finalID = m || autoID;
 
-    if (error) {
-        alert("Gagal Daftar: " + error.message);
-    } else {
-        alert("Pendaftaran Cloud Berjaya! ID: " + finalID);
+        // 3. Tembak ke Supabase (Guna 'sb' kio!)
+        const { error } = await sb
+            .from('users')
+            .insert([{ 
+                matrik: finalID, 
+                name: n, 
+                pass: p, 
+                role: r, 
+                phone: ph 
+            }]);
+
+        if (error) {
+            alert("Ralat Cloud: " + error.message);
+            return;
+        }
+
+        alert("Pendaftaran Berjaya! ID: " + finalID);
         showAuthForm('login');
+
+    } catch (err) {
+        alert("Sistem Crash: " + err.message);
     }
 }
+
 
 
 function checkRole() {
