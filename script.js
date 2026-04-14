@@ -6,7 +6,7 @@ const LIMITS = { "Reading Room": 5, "Discussion Room": 2, "Computer Zone": 10 };
 
 let users = JSON.parse(localStorage.getItem('atx_users')) || [];
 let bookings = JSON.parse(localStorage.getItem('atx_bookings')) || [];
-let session = null;
+let session = JSON.parse(localStorage.getItem('atx_session')) || null;
 let currentLang = localStorage.getItem('atx_lang') || 'ms';
 let bruteStream = null;
 let bruteLoop = null;
@@ -454,6 +454,7 @@ function toggleAuth() {
 // Tambahan: Fungsi hantar kod reset ke WhatsApp
 function sendWhatsAppReset() {
     const phone = document.getElementById('forgotPhone').value.trim();
+    // Cari user dalam database guna nombor telefon
     const user = users.find(u => u.phone === phone);
     
     if (!user) {
@@ -461,16 +462,22 @@ function sendWhatsAppReset() {
         return;
     }
 
+    // 1. Janakan password baru
     const newPass = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // 2. Kemaskini password dalam database (Array users)
     user.pass = newPass; 
+    
+    // 3. Simpan ke LocalStorage (Wajib!)
     saveToLocal();
 
-    const msg = "Hai " + user.name + ", kata laluan sementara E-Library ATX anda: " + newPass + ". Sila log masuk dan tukar segera.";
+    // 4. Mesej yang lebih jelas (Sebutkan No Matrik sekali)
+    const msg = "Hai " + user.name + ",\n\nKata laluan sementara E-Library ATX anda: " + newPass + "\nID Login: " + user.matrik + "\n\nSila log masuk guna ID Login di atas dan tukar password segera.";
+    
     window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(msg), '_blank');
     
     showAuthForm('login');
 }
-
 
 // ==========================================
 // 4. SCANNER, QR, CHECK-IN/OUT
@@ -664,7 +671,11 @@ function showPage(p) {
 }
 
 
-function saveToLocal() { localStorage.setItem('atx_users', JSON.stringify(users)); localStorage.setItem('atx_bookings', JSON.stringify(bookings)); }
+function saveToLocal() {
+    localStorage.setItem('atx_users', JSON.stringify(users));
+    localStorage.setItem('atx_bookings', JSON.stringify(bookings));
+}
+
 function updateStatus(id, s) { const idx = bookings.findIndex(b => b.id === id); if(idx !== -1) { bookings[idx].status = s; saveToLocal(); renderData(); } }
 function deleteBooking(id) { if(confirm("Batal tempahan?")) { bookings = bookings.filter(b => b.id !== id); saveToLocal(); renderData(); } }
 
