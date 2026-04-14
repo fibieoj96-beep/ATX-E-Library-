@@ -29,6 +29,9 @@
                 <div class="toggle-password" onclick="togglePassword('logPass')">
                     <svg id="eye-icon-logPass" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 </div>
+                <p style="margin-top:10px; font-size:12px; text-align: right;">
+                    <span onclick="toggleForgot()" style="color:var(--danger); cursor:pointer; font-weight:600;" data-t="forgot_pass">Lupa Kata Laluan?</span>
+                </p>
             </div>
             <button class="btn-auth-full" onclick="handleLogin()" data-t="signin_btn">SIGN IN</button>
             <p style="margin-top:25px; font-size:13px;">
@@ -37,7 +40,7 @@
             </p>
         </div>
 
-        <div class="form-container signup-form">
+        <div class="form-container signup-form" style="display:none;">
             <h2 data-t="reg_title">CREATE ACCOUNT</h2>
             <div class="input-group">
                 <span class="input-label" data-t="role">Role</span>
@@ -54,6 +57,11 @@
                 <span class="input-label" data-t="full_name">Full Name</span>
                 <input type="text" id="regName" data-t="name_placeholder">
             </div>
+
+            <div class="input-group">
+                <span class="input-label" data-t="phone_label">No. Telefon (WhatsApp)</span>
+                <input type="text" id="regPhone" placeholder="601XXXXXXXX">
+            </div>
             
             <div class="input-group" id="matrikInputGroup">
                 <span class="input-label" data-t="student_id">Student ID</span>
@@ -67,6 +75,18 @@
             <button class="btn-auth-full" style="background:var(--success);" onclick="handleSignup()" data-t="register_btn">REGISTER NOW</button>
             <p class="back-link" onclick="toggleAuth()" data-t="back_to_login">← Back</p>
         </div>
+
+        <div class="form-container forgot-form" style="display:none;">
+            <h2 data-t="forgot_pass">LUPA KATA LALUAN</h2>
+            <p style="font-size: 11px; margin-bottom: 20px; color: #64748b;">Kod reset akan dihantar terus ke WhatsApp anda.</p>
+            <div class="input-group">
+                <span class="input-label" data-t="phone_label">No. Telefon</span>
+                <input type="text" id="forgotPhone" placeholder="601XXXXXXXX">
+            </div>
+            <button class="btn-auth-full" onclick="sendWhatsAppReset()" style="background: #25D366; border:none; color:white; font-weight:bold;">HANTAR KOD VIA WHATSAPP</button>
+            <p class="back-link" onclick="toggleForgot()" data-t="back_to_login">← Kembali</p>
+        </div>
+
     </div>
 </div>
 
@@ -126,19 +146,25 @@
         </div>
 
         <div id="student-view" style="display:none;">
-            <div class="card" style="background:var(--accent); color:white;">
-                <p style="font-size:11px; opacity:0.8;" data-t="my_active_bookings">MY ACTIVE BOOKINGS</p>
-                <h2 id="countMy" style="font-size:36px;">0</h2>
-            </div>
-            <div id="myList"></div>
-            <div class="card" style="margin-top:20px; padding:10px;">
-                <button onclick="toggleHistory()" style="width:100%; background:none; border:none; display:flex; justify-content:space-between; align-items:center; cursor:pointer; color:var(--primary); font-weight:bold;">
-                    <span data-t="booking_history">BOOKING HISTORY</span>
-                    <svg id="history-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="transition:0.3s;"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-                <div id="history-list" style="display:none; margin-top:15px; border-top:1px solid #eee; padding-top:10px;"></div>
-            </div>
+    <div style="display:flex; gap:12px; align-items:stretch; margin-bottom:20px;">
+        <div class="card" style="flex:2; margin-bottom:0; background:var(--accent); color:white; padding:15px; display:flex; flex-direction:column; justify-content:center;">
+            <p style="font-size:10px; opacity:0.8; margin-bottom:5px;" data-t="my_active_bookings">MY ACTIVE BOOKINGS</p>
+            <h2 id="countMy" style="font-size:32px; line-height:1;">0</h2>
         </div>
+        
+        <button onclick="showPage('tempahan')" class="btn-book-side" data-t="make_booking">BOOK</button>
+    </div>
+
+    <div id="myList"></div>
+    
+    <div class="card" style="margin-top:20px; padding:10px;">
+        <button onclick="toggleHistory()" style="width:100%; background:none; border:none; display:flex; justify-content:space-between; align-items:center; cursor:pointer; color:var(--primary); font-weight:bold;">
+            <span data-t="booking_history">BOOKING HISTORY</span>
+            <svg id="history-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="transition:0.3s;"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div id="history-list" style="display:none; margin-top:15px; border-top:1px solid #eee; padding-top:10px;"></div>
+    </div>
+</div>
 
         <div class="body-carousel">
             <p style="font-size:11px; font-weight:bold; color:var(--primary); margin-bottom:10px; letter-spacing:1px;" data-t="info_college">INFO & COLLEGE PROGRAMS</p>
@@ -165,15 +191,35 @@
         <div id="adminHistoryTable"></div>
     </div>
 
-    <div id="page-profile" class="page">
-        <h2 class="page-title" data-t="profile">My Profile</h2>
-        <div class="card" style="text-align:center; padding:40px;">
-            <div class="profile-img-circle" id="profile-display"></div>
-            <button onclick="document.getElementById('imgInput').click()" style="color:var(--accent); font-size:12px; font-weight:bold; background:none; border:none; cursor:pointer;" data-t="change_photo">CHANGE PHOTO</button>
-            <input type="file" id="imgInput" style="display:none" accept="image/*" onchange="uploadPhoto(event)">
-            <h2 id="prof-name">-</h2><p id="prof-matrik">-</p>
+   <div id="page-profile" class="page">
+    <h2 class="page-title" data-t="profile">My Profile</h2>
+    
+    <div class="card" style="text-align:center; padding: 30px 20px;">
+        <div class="profile-img-circle" id="profile-display" style="margin: 0 auto 15px;"></div>
+        <button onclick="document.getElementById('imgInput').click()" style="color:var(--accent); font-size:11px; font-weight:800; background:none; border:none; cursor:pointer; text-transform:uppercase; letter-spacing:1px;" data-t="change_photo">CHANGE PHOTO</button>
+        <input type="file" id="imgInput" style="display:none" accept="image/*" onchange="uploadPhoto(event)">
+
+        <div style="margin-top: 30px; text-align: left; background: var(--input-bg); border-radius: 20px; padding: 5px 20px;">
+            
+            <div style="padding: 15px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                <label style="display:block; font-size:10px; font-weight:800; color:#64748b; margin-bottom:4px; text-transform:uppercase;">Nama Penuh</label>
+                <div id="prof-name" style="font-size:16px; font-weight:700; color:var(--primary);">-</div>
+            </div>
+
+            <div style="padding: 15px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                <label style="display:block; font-size:10px; font-weight:800; color:#64748b; margin-bottom:4px; text-transform:uppercase;">No. Matrik</label>
+                <div id="prof-matrik" style="font-size:16px; font-weight:700; color:var(--primary);">-</div>
+            </div>
+
+            <div style="padding: 15px 0;">
+                <label style="display:block; font-size:10px; font-weight:800; color:#64748b; margin-bottom:4px; text-transform:uppercase;">Nombor Telefon</label>
+                <div id="prof-phone" style="font-size:16px; font-weight:700; color:var(--primary);">-</div>
+            </div>
+
         </div>
     </div>
+</div>
+
 
     <div id="page-settings" class="page">
         <h2 class="page-title" data-t="settings">Account Settings</h2>
@@ -186,7 +232,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span data-t="app_language">App Language</span>
                 <select id="langSelect" onchange="setLanguage(this.value)" style="width:120px !important; padding:5px; font-size:12px; border:1px solid #ddd;">
-                    <option value="ms">Bahasa Melayu</option>
+                    <option value="ms">Melayu</option>
                     <option value="en">English</option>
                 </select>
             </div>
@@ -202,7 +248,7 @@
     </div>
 
   <div id="page-tempahan" class="page">
-    <h2 data-t="make_booking">Buat Tempahan</h2>
+    <h2 data-t="make_booking">Tempah</h2>
     <div class="card">
         <div class="input-group">
             <span class="input-label" data-t="choose_room">Pilih Bilik</span>
@@ -233,10 +279,7 @@
     </div>
 </div>
 
-
-    <button id="fab-tempah" class="fab-add" onclick="showPage('tempahan')" data-t="make_booking">MAKE A BOOKING</button>
-</div>
-
 <script src="script.js"></script>
+
 </body>
 </html>
