@@ -601,76 +601,69 @@ function closeQR() {
 // 5. 14. TUKAR GAMBAR & 4. TUKAR PASSWORD
 // ==========================================
 function uploadPhoto(event) { 
-    const file = event.target.files[0]; if (!file) return;
+    const file = event.target.files[0]; 
+    if (!file) return;
+
     const reader = new FileReader();
-    reader.onload = (e) => {
-        const idx = users.findIndex(u => u.matrik === session.matrik);
-        if (idx !== -1) { users[idx].photo = e.target.result; session.photo = e.target.result; saveToLocal(); renderData(); }
+    reader.onload = async (e) => {
+        const base64Image = e.target.result;
+
+        // Hantar gambar ke Cloud
+        const { error } = await sb
+            .from('users')
+            .update({ photo: base64Image })
+            .eq('matrik', session.matrik);
+
+        if (!error) {
+            session.photo = base64Image;
+            localStorage.setItem('atx_session', JSON.stringify(session));
+            renderData();
+            alert("Gambar profil berjaya dipasang!");
+        } else {
+            alert("Gagal simpan gambar: " + error.message);
+        }
     };
     reader.readAsDataURL(file);
 }
-
 // --- FUNGSI KEMASKINI NAMA (UPDATE NAME) ---
-function updateAccountInfo() {
+// --- KEMASKINI NAMA (CLOUD) ---
+async function updateAccountInfo() {
     const newName = document.getElementById('set-name').value.trim();
-    if (newName) {
-        // Cari user dalam database array
-        const idx = users.findIndex(u => u.matrik === session.matrik);
-        if (idx !== -1) { 
-            users[idx].name = newName; 
-            session.name = newName; // Update session biar terus berubah di dashboard
-            saveToLocal(); 
-            renderData(); 
-            alert("Nama Berjaya Dikemaskini!"); 
-            document.getElementById('set-name').value = ""; 
-        }
+    if (!newName) return alert("Sila masukkan nama baru!");
+
+    const { error } = await sb
+        .from('users')
+        .update({ name: newName }) // Tukar di Cloud
+        .eq('matrik', session.matrik); // Cari ikut No Matrik bos
+
+    if (!error) {
+        session.name = newName; // Update session dalam apps
+        localStorage.setItem('atx_session', JSON.stringify(session));
+        renderData();
+        alert("Nama Berjaya Dikemaskini di Cloud!");
+        document.getElementById('set-name').value = "";
     } else {
-        alert("Sila masukkan nama baru!");
-    }
-    // Cari user dalam database (users array)
-    const idx = users.findIndex(u => u.matrik === session.matrik);
-    
-    if (idx !== -1) {
-        // Kemaskini dalam database users
-        users[idx].name = newName;
-        // Kemaskini dalam session sekarang
-        session.name = newName;
-        
-        // Kemaskini nama di semua tempahan yang pelajar ini buat
-        bookings.forEach(b => {
-            if (b.matrik === session.matrik) {
-                b.uName = newName;
-            }
-        });
-
-        saveToLocal(); // Simpan ke localStorage
-        renderData();  // Update paparan dashboard (Hi, Nama Baru)
-        alert("Nama berjaya dikemaskini!");
-        document.getElementById('set-name').value = ""; // Kosongkan input
+        alert("Gagal update: " + error.message);
     }
 }
 
-// --- FUNGSI TUKAR PASSWORD (CHANGE PASSWORD) ---
-function updatePassword() {
+// --- TUKAR PASSWORD (CLOUD) ---
+async function updatePassword() {
     const newPass = document.getElementById('set-pass').value;
+    if (!newPass || newPass.length < 4) return alert("Password min 4 karakter!");
 
-    if (!newPass || newPass.length < 4) {
-        return alert("Password mesti sekurang-kurangnya 4 karakter!");
-    }
+    const { error } = await sb
+        .from('users')
+        .update({ pass: newPass })
+        .eq('matrik', session.matrik);
 
-    // Cari user dalam database
-    const idx = users.findIndex(u => u.matrik === session.matrik);
-
-    if (idx !== -1) {
-        users[idx].pass = newPass;
-        session.pass = newPass; // Update session juga
-
-        saveToLocal();
-        alert("Kata laluan berjaya ditukar!");
-        document.getElementById('set-pass').value = ""; // Kosongkan input
+    if (!error) {
+        alert("Kata laluan berjaya ditukar di Cloud!");
+        document.getElementById('set-pass').value = "";
+    } else {
+        alert("Gagal tukar password: " + error.message);
     }
 }
-
 
 // ==========================================
 // 6. UI HELPERS (DARKMODE, TOGGLE)
