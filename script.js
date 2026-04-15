@@ -141,19 +141,15 @@ function renderData() {
     const today = now.toISOString().split('T')[0];
     const curT = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
     
-    document.getElementById('welcome').innerText = (t.welcome_prefix || "Hai, ") + session.name;
+    document.getElementById('welcome').innerText = "Hai, " + session.name;
+    document.getElementById('prof-name').innerText = session.name;
+    document.getElementById('prof-phone').innerText = session.phone;
 
-    // --- BAHAGIAN KEMASKINI PROFIL (FIX TELEFON & TEKS) ---
-    const userDB = users.find(u => u.matrik === session.matrik);
-    
     // 1. Gambar Profil
     const profDisplay = document.getElementById('profile-display');
-    if(profDisplay) {
-        profDisplay.innerHTML = (userDB && userDB.photo) 
-            ? `<img src="${userDB.photo}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">` 
-            : `<div style="width:100%; height:100%; background:#eee; border-radius:50%; border:1px solid #ddd;"></div>`;
+    if (profDisplay && session.photo) {
+        profDisplay.innerHTML = `<img src="${session.photo}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
     }
-
     // 2. Teks Profil (Nama, Matrik, Telefon)
     const pName = document.getElementById('prof-name');
     const pMatrik = document.getElementById('prof-matrik');
@@ -629,23 +625,29 @@ function uploadPhoto(event) {
 // --- KEMASKINI NAMA (CLOUD) ---
 async function updateAccountInfo() {
     const newName = document.getElementById('set-name').value.trim();
-    if (!newName) return alert("Sila masukkan nama baru!");
+    if (!newName) return alert("Sila isi nama!");
 
-    const { error } = await sb
+    // 1. UPDATE CLOUD & MINTA DATA BALIK (.select())
+    const { data, error } = await sb
         .from('users')
-        .update({ name: newName }) // Tukar di Cloud
-        .eq('matrik', session.matrik); // Cari ikut No Matrik bos
+        .update({ name: newName })
+        .eq('matrik', session.matrik)
+        .select(); // Kita suruh Supabase bagi balik data yang sudah diupdate
 
-    if (!error) {
-        session.name = newName; // Update session dalam apps
-        localStorage.setItem('atx_session', JSON.stringify(session));
-        renderData();
-        alert("Nama Berjaya Dikemaskini di Cloud!");
-        document.getElementById('set-name').value = "";
-    } else {
-        alert("Gagal update: " + error.message);
+    if (error) {
+        console.error("Ralat Sync:", error);
+        return alert("Gagal Sync: " + error.message);
+    }
+
+    // 2. SYNC BALIK DENGAN APPS
+    if (data && data.length > 0) {
+        session = data[0]; // Ambil data murni yang baru dari Cloud
+        localStorage.setItem('atx_session', JSON.stringify(session)); // Simpan dalam phone
+        renderData(); // Lukis semula UI
+        alert("Data sudah Synchronize sapa murni!");
     }
 }
+
 
 // --- TUKAR PASSWORD (CLOUD) ---
 async function updatePassword() {
@@ -711,35 +713,50 @@ function saveToLocal() {
     localStorage.setItem('atx_bookings', JSON.stringify(bookings));
 }
 
-function updateStatus(id, s) { const idx = bookings.findIndex(b => b.id === id); if(idx !== -1) { bookings[idx].status = s; saveToLocal(); renderData(); } }
-function deleteBooking(id) { if(confirm("Batal tempahan?")) { bookings = bookings.filter(b => b.id !== id); saveToLocal(); renderData(); } }
+async function updateStatus(id, s) { 
+    const { error } = await sb
+        .from('bookings')
+        .update({ status: s })
+        .eq('id', id); // Cari tempahan ikut ID unik dia
 
-function submitBooking() { 
-    const d = document.getElementById('bDate').value, 
-          s = document.getElementById('bStart').value, 
-          e = document.getElementById('bEnd').value, 
-          t = document.getElementById('bType').value; 
-
-    // Safety check supaya tidak crash kalau session kosong
-    if(!session || !session.matrik) return alert("Sesi tamat, sila login semula!");
-
-    if(d && s && e){ 
-        bookings.push({
-            id: Date.now(), 
-            matrik: session.matrik, // Ini kunci akaun baru boleh buat booking
-            uName: session.name, 
-            type: t, 
-            date: d, 
-            start: s, 
-            end: e, 
-            status: 'pending'
-        }); 
-        saveToLocal(); 
-        renderData(); 
-        showPage('dashboard'); 
-    } else { alert("Sila isi Tarikh & Masa!"); }
+    if (!error) {
+        alert("Status dikemaskini: " + s.toUpperCase());
+        await fetchBookings(); // Sync balik data terbaru
+    } else {
+        alert("Gagal kemaskini: " + error.message);
+    }
 }
 
+async function submitBooking() { 
+    const d = document.getElementById('bDate').value;
+    const s = document.getElementById('bStart').value;
+    const e = document.getElementById('bEnd').value;
+    const t = document.getElementById('bType').value; 
+
+    if(!session || !session.matrik) return alert("Sila login semula!");
+    if(!d || !s || !e) return alert("Sila isi Tarikh & Masa!");
+
+    // TEMBAK KE CLOUD
+    const { error } = await sb
+        .from('bookings')
+        .insert([{
+            matrik: session.matrik,
+            uName: session.name,
+            type: t,
+            date: d,
+            start: s,
+            end: e,
+            status: 'pending'
+        }]);
+
+    if (!error) {
+        alert("Tempahan berjaya dihantar ke Cloud!");
+        await fetchBookings(); // Tarik data baru supaya Admin nampak
+        showPage('dashboard'); 
+    } else {
+        alert("Gagal Booking: " + error.message);
+    }
+}
 
 function toggleMenu() { document.getElementById('mainMenu').classList.toggle('open'); }
 function applyTranslations() {
