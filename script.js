@@ -807,12 +807,14 @@ function toggleMenu() {
     document.getElementById('mainMenu').classList.toggle('open');
 }
 
+// --- LOGIK LOGOUT MURNI ---
 function handleLogout(){   
-localStorage.removeItem('atx_session'); 
+    localStorage.removeItem('atx_session'); 
     session = null;
     location.reload(); 
 }
 
+// --- LOGIK TRANSLATIONS (SATU SAJA) ---
 function applyTranslations() {
     const t = translations[currentLang];
     document.querySelectorAll('[data-t]').forEach(el => {
@@ -832,14 +834,10 @@ function applyTranslations() {
 function setLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('atx_lang', lang);
+    applyTranslations();
+    if(session) renderData();
     
-    // 1. Tukar semua teks static dalam skrin (Login/Daftar)
-    applyTranslations(); 
-    
-    // 2. Kalau sudah login, baru lukis dashboard
-    if(session) renderData(); 
-
-    // 3. Kemaskini rupa butang aktif (BM vs EN)
+    // Update rupa butang aktif (BM/EN)
     const msEl = document.getElementById('lang-ms');
     const enEl = document.getElementById('lang-en');
     if(msEl && enEl) {
@@ -848,12 +846,15 @@ function setLanguage(lang) {
     }
 }
 
+// ==========================================
+// 8. ENJIN UTAMA (DOM CONTENT LOADED)
+// ==========================================
 window.addEventListener('DOMContentLoaded', async () => {
     applyTranslations();
     
+    // 1. Logik Auto-Login
     if (session && session.matrik) {
         await loginSuccess(); 
-        
         const { data } = await sb.from('users').select('*').eq('matrik', session.matrik).single();
         if (data) {
             session = data;
@@ -864,9 +865,39 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     const isDark = localStorage.getItem('atx_darkmode') === 'true';
     if (isDark) document.body.classList.add('dark-mode');
-});
 
-setInterval(async () => {
-    if (session) {
-        await fetchBookings();}
-}, 10000);
+    // 2. Auto-Refresh Cloud setiap 10 saat
+    setInterval(async () => {
+        if (session) {
+            await fetchBookings(); 
+        }
+    }, 10000);
+
+    // 3. LOGIK SLIDE DOWN TO REFRESH
+    let startY = 0;
+    const appArea = document.getElementById('app-content');
+
+    if (appArea) {
+        appArea.addEventListener('touchstart', (e) => {
+            if (appArea.scrollTop === 0) startY = e.touches[0].pageY;
+        }, {passive: true});
+
+        appArea.addEventListener('touchmove', (e) => {
+            const y = e.touches[0].pageY;
+            const dist = y - startY;
+            if (dist > 70 && appArea.scrollTop === 0) {
+                document.body.classList.add('refreshing');
+            }
+        }, {passive: true});
+
+        appArea.addEventListener('touchend', async () => {
+            if (document.body.classList.contains('refreshing')) {
+                await fetchBookings(); 
+                setTimeout(() => {
+                    document.body.classList.remove('refreshing');
+                    console.log("Data Cloud berjaya di-refresh sapa murni!");
+                }, 800);
+            }
+        });
+    }
+}); [span_8](start_span)// <--- FAIL MESTI TAMAT TEPAT DI SINI KIO[span_8](end_span)!
