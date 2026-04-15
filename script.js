@@ -807,6 +807,12 @@ function toggleMenu() {
     document.getElementById('mainMenu').classList.toggle('open');
 }
 
+function handleLogout(){   
+localStorage.removeItem('atx_session'); 
+    session = null;
+    location.reload(); 
+}
+
 function applyTranslations() {
     const t = translations[currentLang];
     document.querySelectorAll('[data-t]').forEach(el => {
@@ -826,12 +832,22 @@ function applyTranslations() {
 function setLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('atx_lang', lang);
-    // WAJIB panggil translations supaya teks di skrin bertukar!
-    applyTranslations();
-    if(session) renderData();
+    
+    // 1. Tukar semua teks static dalam skrin (Login/Daftar)
+    applyTranslations(); 
+    
+    // 2. Kalau sudah login, baru lukis dashboard
+    if(session) renderData(); 
+
+    // 3. Kemaskini rupa butang aktif (BM vs EN)
+    const msEl = document.getElementById('lang-ms');
+    const enEl = document.getElementById('lang-en');
+    if(msEl && enEl) {
+        msEl.classList.toggle('active', lang === 'ms');
+        enEl.classList.toggle('active', lang === 'en');
+    }
 }
 
-// --- LOGIK NAVIGASI & INIT (ENJIN UTAMA) ---
 window.addEventListener('DOMContentLoaded', async () => {
     applyTranslations();
     
@@ -848,11 +864,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     const isDark = localStorage.getItem('atx_darkmode') === 'true';
     if (isDark) document.body.classList.add('dark-mode');
+});
 
-    // Mula Refresh cuma SELEPAS UI sda sedia supaya tidak crash
-    setInterval(async () => {
-        if (session) {
-            await fetchBookings(); 
-        }
-    }, 10000);
-}); 
+setInterval(async () => {
+    if (session) {
+        await fetchBookings();}
+}, 10000);
