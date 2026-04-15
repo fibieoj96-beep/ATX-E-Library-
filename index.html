@@ -85,21 +85,6 @@
         <span class="back-link" onclick="showAuthForm('login')" style="cursor:pointer; font-weight:bold; color:var(--primary); font-size:13px;" data-t="back_to_login">← KEMBALI KE LOGIN</span>
     </p>
 </div>
-
-        <div class="form-container forgot-form" style="display:none;">
-            <h2 data-t="forgot_pass">LUPA KATA LALUAN</h2>
-            <p style="font-size: 11px; margin-bottom: 20px; color: #64748b;">Kod reset akan dihantar terus ke WhatsApp anda.</p>
-            <div class="input-group">
-                <span class="input-label" data-t="phone_label">No. Telefon</span>
-                <input type="text" id="forgotPhone" placeholder="601XXXXXXXX">
-            </div>
-            <button class="btn-auth-full" onclick="sendWhatsAppReset()" style="background: #25D366; border:none; color:white; font-weight:bold;">HANTAR KOD VIA WHATSAPP</button>
-            
-            <p class="back-link" onclick="showAuthForm('login')" style="cursor:pointer; margin-top:20px; font-size:13px; font-weight:bold; color:var(--primary);" data-t="back_to_login">← Kembali</p>
-        </div>
-
-    </div>
-
         <div class="form-container forgot-form" style="display:none;">
             <h2 data-t="forgot_pass">LUPA KATA LALUAN</h2>
             <p style="font-size: 11px; margin-bottom: 20px; color: #64748b;">Kod reset akan dihantar terus ke WhatsApp anda.</p>
@@ -302,8 +287,6 @@
         <button class="btn-auth-full" style="margin-top:20px;" onclick="submitBooking()" data-t="confirm_booking">SAHKAN TEMPAHAN</button>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script src="script.js"></script>
 

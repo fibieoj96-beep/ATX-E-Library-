@@ -139,10 +139,6 @@ async function renderData() {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
     const curT = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
-    
-    document.getElementById('welcome').innerText = "Hai, " + session.name;
-    document.getElementById('prof-name').innerText = session.name;
-    document.getElementById('prof-phone').innerText = session.phone;
 
     // 1. Gambar Profil
     const profDisplay = document.getElementById('profile-display');
@@ -808,31 +804,6 @@ async function submitBooking() {
 
 
 function toggleMenu() { document.getElementById('mainMenu').classList.toggle('open'); }
-function applyTranslations() {
-    const t = translations[currentLang];
-    document.querySelectorAll('[data-t]').forEach(el => {
-        const key = el.getAttribute('data-t');
-        if (t[key]) el.innerText = t[key];
-    });
-}
-// Fungsi untuk tukar bahasa (dipanggil oleh butang BM/EN)
-function setLanguage(lang) {
-    currentLang = lang;
-    localStorage.setItem('atx_lang', lang); // Simpan dalam memory iPhone
-    
-    // Update visual butang BM|EN di skrin login
-    const msBtn = document.getElementById('lang-ms');
-    const enBtn = document.getElementById('lang-en');
-    if(msBtn && enBtn) {
-        msBtn.classList.toggle('active', lang === 'ms');
-        enBtn.classList.toggle('active', lang === 'en');
-        msBtn.style.opacity = (lang === 'ms') ? "1" : "0.5";
-        enBtn.style.opacity = (lang === 'en') ? "1" : "0.5";
-    }
-
-    applyTranslations(); // Tukar teks statik (data-t)
-    if(session) renderData(); // Tukar teks dinamik (list/history)
-}
 
 function applyTranslations() {
     const t = translations[currentLang];
@@ -842,7 +813,7 @@ function applyTranslations() {
             if (el.tagName === 'INPUT') {
                 el.placeholder = t[key];
             } else if (el.tagName === 'OPTION') {
-                el.text = t[key]; // Ini untuk tukar bahasa dalam dropdown
+                el.text = t[key]; 
             } else {
                 el.innerText = t[key];
             }
@@ -850,32 +821,9 @@ function applyTranslations() {
     });
 }
 
-
-window.addEventListener('DOMContentLoaded', async () => {
+function setLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('atx_lang', lang);
     applyTranslations();
-    
-    // 1. Cek kalau ada 'session' dalam phone
-    if (session && session.matrik) {
-        // 2. Terus panggil loginSuccess untuk masuk dashboard
-        // Gunakan 'await' supaya dia sempat tarik data bookings
-        await loginSuccess(); 
-        
-        // 3. (Opsional) Tarik profil paling latest dari Cloud
-        const { data } = await sb.from('users').select('*').eq('matrik', session.matrik).single();
-        if (data) {
-            session = data;
-            localStorage.setItem('atx_session', JSON.stringify(session));
-            renderData();
-        }
-    }
-
-    const isDark = localStorage.getItem('atx_darkmode') === 'true';
-    if (isDark) document.body.classList.add('dark-mode');
-});
-
-//auto refresh sync
-setInterval(async () => {
-    if (session) {
-        await fetchBookings(); // Tarik data terbaru dari Cloud secara automatik
-    }
-}, 10000); // 10000ms = 10 saat sapa murni
+    if(session) renderData();
+}
