@@ -9,8 +9,7 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 const MASTER_KEY = "ATX_ADMIN_2026";
 const LIMITS = { "Reading Room": 5, "Discussion Room": 2, "Computer Zone": 10 };
 
-let users = JSON.parse(localStorage.getItem('atx_users')) || [];
-let bookings = JSON.parse(localStorage.getItem('atx_bookings')) || [];
+let bookings = [];
 let session = JSON.parse(localStorage.getItem('atx_session')) || null;
 let currentLang = localStorage.getItem('atx_lang') || 'ms';
 let bruteStream = null;
@@ -60,7 +59,7 @@ const translations = {
         app_language: "Bahasa Aplikasi",
         update_name: "KEMASKINI NAMA",
         change_password: "TUKAR KATA LALUAN",
-        make_booking: "BUAT TEMPAHAN",
+        make_booking: "TEMPAH",
         confirm_booking: "SAHKAN TEMPAHAN",
         // --- TAMBAHAN UNTUK FIX BLANK INPUTS ---
         choose_room: "Pilih Bilik",
@@ -115,7 +114,7 @@ const translations = {
         app_language: "App Language",
         update_name: "UPDATE NAME",
         change_password: "CHANGE PASSWORD",
-        make_booking: "MAKE A BOOKING",
+        make_booking: "BOOK",
         confirm_booking: "CONFIRM BOOKING",
         // --- TAMBAHAN UNTUK FIX BLANK INPUTS ---
         choose_room: "Choose Room",
@@ -134,7 +133,7 @@ const translations = {
 // ==========================================
 // 2. CORE ENGINE: RENDER DATA (CLEAN UI)
 // ==========================================
-function renderData() {
+async function renderData() {
     if(!session) return;
     const t = translations[currentLang];
     const now = new Date();
@@ -160,8 +159,8 @@ function renderData() {
     
     // Ambil data phone dari userDB (database) atau session
     if (pPhone) {
-        pPhone.innerText = (userDB && userDB.phone) ? userDB.phone : (session.phone || "-");
-    }
+    pPhone.innerText = session.phone || "-";
+}
     // -------------------------------------------------------
 
     if (session.role === 'user') {
@@ -227,37 +226,62 @@ function renderData() {
         }).join('') || '<p style="text-align:center; padding:20px;">Tiada sejarah.</p>';
 
     } else {
-        let needsSaving = false;
-        bookings.forEach(b => {
-            if (b.status === 'approved' && b.date === today && curT >= b.end) {
-                b.status = 'ended';
-                needsSaving = true;
-            }
-        });
-        if (needsSaving) saveToLocal();
+        // --- KOD BARU (AUTO-SYNC KE CLOUD) ---
+let needsSaving = false;
+// Kita guna Promise.all supaya semua update Cloud selesai serentak
+await Promise.all(bookings.map(async (b) => {
+    if (b.status === 'approved' && b.date === today && curT >= b.end) {
+        b.status = 'ended';
+        
+        // Terus update status ke Cloud (Supabase)
+        await sb.from('bookings')
+            .update({ status: 'ended' })
+            .eq('id', b.id);
+            
+        needsSaving = true;
+    }
+}));
+
+if (needsSaving) {
+    saveToLocal(); // Simpan backup dalam phone
+    // (optional) Refresh data supaya Admin nampak perubahan live
+    // await fetchBookings(); 
+}
 
         for (let zone in LIMITS) {
             const occupied = bookings.filter(b => {
-                const isApprovedToday = (b.status === 'approved' && b.date === today);
-                const isOngoing = (curT >= b.start && curT < b.end);
-                let roomMatch = false;
-                const type = b.type.toLowerCase();
-                if (zone === "Reading Room" && (type.includes("reading") || type.includes("bacaan"))) roomMatch = true;
-                if (zone === "Discussion Room" && (type.includes("discussion") || type.includes("perbincangan"))) roomMatch = true;
-                if (zone === "Computer Zone" || zone === "Computer Lab") {
-                    if (type.includes("computer") || type.includes("komputer") || type.includes("zon")) roomMatch = true;
-                }
-                return isApprovedToday && isOngoing && roomMatch;
-            }).length;
+    // 1. Pastikan status 'approved' ATAU 'active' (sebab orang tengah guna)
+    const isApprovedToday = (b.status === 'approved' || b.status === 'active') && b.date === today;
+    const isOngoing = (curT >= b.start && curT < b.end);
+    
+    let roomMatch = false;
+    const type = b.type.toLowerCase();
 
-            let elId = (zone === "Reading Room") ? "stat-bacaan" : (zone === "Discussion Room") ? "stat-perbincangan" : "stat-komputer";
-            const el = document.getElementById(elId);
-            if (el) {
-                const baki = LIMITS[zone] - occupied;
-                el.innerText = `${baki}/${LIMITS[zone]}`;
-                el.style.color = (baki <= 0) ? "#dc3545" : "#28a745";
-            }
-        }
+    if (zone === "Reading Room" && (type.includes("reading") || type.includes("bacaan"))) {
+        roomMatch = true;
+    }
+    
+    // 2. Sekarang kita guna "perbincangan" sebagai keyword utama
+    if (zone === "Discussion Room" && (type.includes("discussion") || type.includes("perbincangan"))) {
+        roomMatch = true;
+    }
+    
+    if (zone === "Computer Zone" || zone === "Computer Lab") {
+        if (type.includes("computer") || type.includes("komputer") || type.includes("zon")) roomMatch = true;
+    }
+    
+    return isApprovedToday && isOngoing && roomMatch;
+}).length;
+
+// 3. TUKAR DI SINI: elId mesti stat-perbincangan supaya sama dengan niat bos
+let elId = (zone === "Reading Room") ? "stat-bacaan" : (zone === "Discussion Room") ? "stat-perbincangan" : "stat-komputer";
+
+const el = document.getElementById(elId);
+if (el) {
+    const baki = LIMITS[zone] - occupied;
+    el.innerText = `${baki}/${LIMITS[zone]}`;
+    el.style.color = (baki <= 0) ? "#dc3545" : "#28a745";
+}
 
         const pendingData = bookings.filter(b => b.status === 'pending').sort((a, b) => b.id - a.id);
         document.getElementById('adminTable').innerHTML = pendingData.map(b => `
@@ -418,16 +442,20 @@ async function loginSuccess() {
 }
 
 async function fetchBookings() {
+    // 1. Tarik semua tempahan dari Supabase
     const { data, error } = await sb
         .from('bookings')
         .select('*')
         .order('id', { ascending: false });
 
     if (!error) {
-        bookings = data || [];
-        renderData();
+        bookings = data || []; // Simpan data Cloud ke variable global
+        renderData(); // Baru lukis UI (termasuk statistik 1/2 tadi)
+    } else {
+        console.error("Gagal tarik data:", error.message);
     }
 }
+
 
 function checkRole() {
     const role = document.getElementById('regRole').value;
@@ -496,26 +524,27 @@ function toggleAuth() {
 }
 
 // Tambahan: Fungsi hantar kod reset ke WhatsApp
-function sendWhatsAppReset() {
+async function sendWhatsAppReset() {
     const phone = document.getElementById('forgotPhone').value.trim();
-    const user = users.find(u => u.phone === phone);
+    
+    // Cari user di Cloud guna No. Tel
+    const { data, error } = await sb
+        .from('users')
+        .select('*')
+        .eq('phone', phone)
+        .single();
 
-    if (!user) {
-        alert("Nombor telefon tidak dijumpai!");
-        return;
-    }
+    if (error || !data) return alert("Nombor telefon tidak dijumpai!");
 
     const newPass = Math.floor(100000 + Math.random() * 900000).toString();
-    user.pass = newPass;
-    saveToLocal();
+    
+    // Update password baru ke Cloud
+    await sb.from('users').update({ pass: newPass }).eq('phone', phone);
 
-    const roleLabel = (user.role === 'admin' ? "ADMIN" : "PELAJAR");
-    const msg = "Hai " + user.name + " (" + roleLabel + "),\n\nKata laluan sementara E-Library ATX anda: " + newPass + "\nID Login: " + user.matrik + "\n\nSila log masuk segera dan tukar password anda.";
-
+    const msg = `Hai ${data.name}, Kata laluan sementara anda: ${newPass}`;
     window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(msg), '_blank');
     showAuthForm('login');
 }
-
 
 // ==========================================
 // 4. SCANNER, QR, CHECK-IN/OUT
@@ -543,28 +572,35 @@ async function startBruteScanner() {
 }
 function stopBruteScanner() { if (bruteLoop) cancelAnimationFrame(bruteLoop); if (bruteStream) { bruteStream.getTracks().forEach(t => t.stop()); bruteStream = null; } document.getElementById('scanner-wrapper').style.display = 'none'; document.getElementById('btn-start').style.display = 'block'; document.getElementById('btn-stop').style.display = 'none'; }
 
-function processCheckOut(id) {
+async function processCheckOut(id) {
     const b = bookings.find(x => x.id == id);
     if (!b) return alert("Kod QR tidak sah!");
 
     const now = new Date();
     const curT = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
 
+    let newStatus = "";
+    let updateData = {};
+
     if (b.status === 'approved') {
-        b.status = 'active';
-        saveToLocal();
-        renderData();
-        alert("Check-in berjaya! Sesi pelajar telah bermula.");
-    } 
-    else if (b.status === 'active') {
-        b.status = 'ended';
-        b.end = curT;
-        saveToLocal();
-        renderData();
-        alert("Check-out berjaya! Sesi telah tamat.");
-    } 
-    else {
-        alert("Status tidak membenarkan imbasan.");
+        newStatus = 'active';
+        updateData = { status: 'active' };
+    } else if (b.status === 'active') {
+        newStatus = 'ended';
+        updateData = { status: 'ended', end: curT };
+    } else {
+        return alert("Status tidak membenarkan imbasan.");
+    }
+
+    // UPDATE KE CLOUD
+    const { error } = await sb
+        .from('bookings')
+        .update(updateData)
+        .eq('id', id);
+
+    if (!error) {
+        alert("Check-" + (newStatus === 'active' ? "in" : "out") + " Berjaya!");
+        await fetchBookings(); // Sync balik semua peranti
     }
 }
 
@@ -591,6 +627,20 @@ function showQR(id) {
 function closeQR() {
     const qrModal = document.getElementById('qr-modal');
     if (qrModal) qrModal.style.display = 'none';
+}
+
+async function deleteBooking(id) { 
+    if(confirm("Batal tempahan?")) { 
+        const { error } = await sb
+            .from('bookings')
+            .delete()
+            .eq('id', id);
+
+        if (!error) {
+            alert("Tempahan dibatalkan di Cloud!");
+            await fetchBookings(); 
+        }
+    } 
 }
 
 // ==========================================
@@ -707,10 +757,8 @@ function showPage(p) {
     document.getElementById('mainMenu').classList.remove('open');
 }
 
-
 function saveToLocal() {
-    localStorage.setItem('atx_users', JSON.stringify(users));
-    localStorage.setItem('atx_bookings', JSON.stringify(bookings));
+localStorage.setItem('atx_bookings', JSON.stringify(bookings));
 }
 
 async function updateStatus(id, s) { 
@@ -733,8 +781,8 @@ async function submitBooking() {
     const e = document.getElementById('bEnd').value;
     const t = document.getElementById('bType').value; 
 
-    if(!session || !session.matrik) return alert("Sila login semula!");
-    if(!d || !s || !e) return alert("Sila isi Tarikh & Masa!");
+    if(!session) return alert("Sila login dulu bos!");
+    if(!d || !s || !e) return alert("Sila lengkapkan Tarikh & Masa!");
 
     // TEMBAK KE CLOUD
     const { error } = await sb
@@ -746,17 +794,18 @@ async function submitBooking() {
             date: d,
             start: s,
             end: e,
-            status: 'pending'
+            status: 'pending' // Default dia 'pending' dulu
         }]);
 
     if (!error) {
-        alert("Tempahan berjaya dihantar ke Cloud!");
-        await fetchBookings(); // Tarik data baru supaya Admin nampak
+        alert("Tempahan Berjaya Dihantar ke Cloud!");
+        await fetchBookings(); // Sync balik supaya statistik terus berubah
         showPage('dashboard'); 
     } else {
-        alert("Gagal Booking: " + error.message);
+        alert("Gagal: " + error.message);
     }
 }
+
 
 function toggleMenu() { document.getElementById('mainMenu').classList.toggle('open'); }
 function applyTranslations() {
@@ -802,12 +851,31 @@ function applyTranslations() {
 }
 
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     applyTranslations();
-    const isDark = localStorage.getItem('atx_darkmode') === 'true';
-    if (isDark) {
-        document.body.classList.add('dark-mode');
-        const toggle = document.getElementById('darkToggle');
-        if (toggle) toggle.checked = true; // SINC BUTANG TOGGLE ASAL
+    
+    // 1. Cek kalau ada 'session' dalam phone
+    if (session && session.matrik) {
+        // 2. Terus panggil loginSuccess untuk masuk dashboard
+        // Gunakan 'await' supaya dia sempat tarik data bookings
+        await loginSuccess(); 
+        
+        // 3. (Opsional) Tarik profil paling latest dari Cloud
+        const { data } = await sb.from('users').select('*').eq('matrik', session.matrik).single();
+        if (data) {
+            session = data;
+            localStorage.setItem('atx_session', JSON.stringify(session));
+            renderData();
+        }
     }
+
+    const isDark = localStorage.getItem('atx_darkmode') === 'true';
+    if (isDark) document.body.classList.add('dark-mode');
 });
+
+//auto refresh sync
+setInterval(async () => {
+    if (session) {
+        await fetchBookings(); // Tarik data terbaru dari Cloud secara automatik
+    }
+}, 10000); // 10000ms = 10 saat sapa murni
