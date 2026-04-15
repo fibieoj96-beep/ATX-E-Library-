@@ -827,3 +827,30 @@ function setLanguage(lang) {
     applyTranslations();
     if(session) renderData();
 }
+    
+window.addEventListener('DOMContentLoaded', async () => {
+    applyTranslations();
+    
+    // Cek kalau ada session lama dalam phone
+    if (session && session.matrik) {
+        await loginSuccess(); 
+        
+        // Sync profil paling latest dari Cloud
+        const { data } = await sb.from('users').select('*').eq('matrik', session.matrik).single();
+        if (data) {
+            session = data;
+            localStorage.setItem('atx_session', JSON.stringify(session));
+            renderData();
+        }
+    }
+
+    const isDark = localStorage.getItem('atx_darkmode') === 'true';
+    if (isDark) document.body.classList.add('dark-mode');
+});
+
+// Auto-Refresh Sync setiap 10 saat
+setInterval(async () => {
+    if (session) {
+        await fetchBookings(); 
+    }
+}, 10000);
