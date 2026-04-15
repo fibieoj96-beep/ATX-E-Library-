@@ -156,9 +156,7 @@ async function renderData() {
     // Ambil data phone dari userDB (database) atau session
     if (pPhone) {
     pPhone.innerText = session.phone || "-";
-}
-    // -------------------------------------------------------
-
+} 
     if (session.role === 'user') {
         const myAll = bookings.filter(b => b.matrik === session.matrik);
 
@@ -336,14 +334,12 @@ if (el) {
                     </div>
                     <div class="status-badge ${sClass}">${displayStatus}</div>
                 </div>`;
-            }).join('') || '<p style="text-align:center; padding:30px; opacity:0.5;">Tiada rekod.</p>';
-        }
-    }
+            }).join('') || '<p style="text-align:center; padding:30px; opacity:0.5;">Tiada rekod.</p>';}
+  }
 }
 // ==========================================
 // 3. AUTHENTICATION (SUPABASE CLOUD)
 // ==========================================
-
 async function handleLogin() {
     const u = document.getElementById('logUser').value.trim();
     const p = document.getElementById('logPass').value;
@@ -826,16 +822,15 @@ function setLanguage(lang) {
     localStorage.setItem('atx_lang', lang);
     applyTranslations();
     if(session) renderData();
-}
-    
+} // <--- WAJIB ADA PAGAR NI SUPAYA TIDAK CRASH!
+
+// --- ENJIN UTAMA (SATU SAJA) ---
 window.addEventListener('DOMContentLoaded', async () => {
     applyTranslations();
     
-    // Cek kalau ada session lama dalam phone
     if (session && session.matrik) {
         await loginSuccess(); 
         
-        // Sync profil paling latest dari Cloud
         const { data } = await sb.from('users').select('*').eq('matrik', session.matrik).single();
         if (data) {
             session = data;
