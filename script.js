@@ -134,7 +134,10 @@ const translations = {
 // 2. CORE ENGINE: RENDER DATA (CLEAN UI)
 // ==========================================
 async function renderData() {
-    if(!session) return;
+    if (!session) {
+    console.warn("Session tiada");
+    return;
+}
     const t = translations[currentLang];
     const now = new Date();
     const today = now.toISOString().split('T')[0];
@@ -171,7 +174,8 @@ async function renderData() {
             b.status === 'ended'
         ).sort((a, b) => b.id - a.id);
 
-        document.getElementById('countMy').innerText = active.length;
+        const el = document.getElementById('countMy');
+if (el) el.innerText = active.length;
 
         document.getElementById('myList').innerHTML = active.map(b => {
             let actionButton = '';
@@ -276,7 +280,7 @@ if (el) {
     el.innerText = `${baki}/${LIMITS[zone]}`;
     el.style.color = (baki <= 0) ? "#dc3545" : "#28a745";
 }
-
+}
         const pendingData = bookings.filter(b => b.status === 'pending').sort((a, b) => b.id - a.id);
         document.getElementById('adminTable').innerHTML = pendingData.map(b => `
             <div class="card" style="border-left: 6px solid #ffc107; display:flex; justify-content:space-between; align-items:center; padding:12px; margin-bottom:10px;">
@@ -291,7 +295,9 @@ if (el) {
             </div>`).join('') || '<p style="text-align:center; padding:10px; opacity:0.6;">Tiada permohonan baru.</p>';
 
         const liveData = bookings.filter(b => b.date === today && b.status === 'approved' && curT < b.end).sort((a, b) => b.id - a.id);
-        document.getElementById('live-bookings').innerHTML = liveData.map(b => `
+        const liveEl = document.getElementById('live-bookings');
+if (liveEl) {
+    liveEl.innerHTML =liveData.map(b => `
             <div class="card" style="border-left: 6px solid #28a745; display:flex; align-items:center; gap:12px; padding:12px; margin-bottom:10px;">
                 <div class="status-dot bg-live"></div>
                 <div>
@@ -299,6 +305,7 @@ if (el) {
                     <small>${b.type} | Masa: ${b.start} - ${b.end}</small>
                 </div>
             </div>`).join('') || '<p style="text-align:center; opacity:0.6; padding:10px;">Tiada pelajar aktif.</p>';
+}
 
         const justEnded = bookings.filter(b => b.status === 'ended').sort((a, b) => b.id - a.id);
         const adminLiveHist = document.getElementById('admin-live-history');
@@ -757,11 +764,10 @@ async function updateStatus(id, s) {
     const { error } = await sb
         .from('bookings')
         .update({ status: s })
-        .eq('id', id); // Cari tempahan ikut ID unik dia
-
+        .eq('id', id); 
     if (!error) {
         alert("Status dikemaskini: " + s.toUpperCase());
-        await fetchBookings(); // Sync balik data terbaru
+        await fetchBookings(); 
     } else {
         alert("Gagal kemaskini: " + error.message);
     }
@@ -776,30 +782,30 @@ async function submitBooking() {
     if(!session) return alert("Sila login dulu bos!");
     if(!d || !s || !e) return alert("Sila lengkapkan Tarikh & Masa!");
 
-    // TEMBAK KE CLOUD
     const { error } = await sb
         .from('bookings')
         .insert([{
-            matrik: session.matrik,
-            uName: session.name,
+         matrik: session.matrik,
+         uName: session.name,
             type: t,
             date: d,
             start: s,
             end: e,
-            status: 'pending' // Default dia 'pending' dulu
+            status: 'pending'
         }]);
 
     if (!error) {
-        alert("Tempahan Berjaya Dihantar ke Cloud!");
-        await fetchBookings(); // Sync balik supaya statistik terus berubah
-        showPage('dashboard'); 
+        alert("Tempahan berjaya dihantar!");
+        await fetchBookings();
+        showPage('dashboard');
     } else {
-        alert("Gagal: " + error.message);
+        alert("Gagal tempah: " + error.message);
     }
 }
 
-
-function toggleMenu() { document.getElementById('mainMenu').classList.toggle('open'); }
+function toggleMenu() {
+    document.getElementById('mainMenu').classList.toggle('open');
+}
 
 function applyTranslations() {
     const t = translations[currentLang];
@@ -820,11 +826,22 @@ function applyTranslations() {
 function setLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('atx_lang', lang);
-    applyTranslations();
-    if(session) renderData();
-} // <--- WAJIB ADA PAGAR NI SUPAYA TIDAK CRASH!
+    
+    // 1. Tukar semua teks static dalam skrin (Login/Daftar)
+    applyTranslations(); 
+    
+    // 2. Kalau sudah login, baru lukis dashboard
+    if(session) renderData(); 
 
-// --- ENJIN UTAMA (SATU SAJA) ---
+    // 3. Kemaskini rupa butang aktif (BM vs EN)
+    const msEl = document.getElementById('lang-ms');
+    const enEl = document.getElementById('lang-en');
+    if(msEl && enEl) {
+        msEl.classList.toggle('active', lang === 'ms');
+        enEl.classList.toggle('active', lang === 'en');
+    }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
     applyTranslations();
     
@@ -843,9 +860,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (isDark) document.body.classList.add('dark-mode');
 });
 
-// Auto-Refresh Sync setiap 10 saat
 setInterval(async () => {
     if (session) {
-        await fetchBookings(); 
-    }
+        await fetchBookings();}
 }, 10000);
